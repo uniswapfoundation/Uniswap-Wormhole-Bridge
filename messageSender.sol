@@ -28,8 +28,8 @@ contract UniswapWormholeMessageSender {
         _;
     }
 
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver) external onlyOwner payable {
-        bytes memory payload = abi.encode(targets,values,datas,messageReceiver);
+    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+        bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
         
         wormhole.publishMessage{value: wormhole.messageFee()}(nonce, payload, consistencyLevel);
         nonce = nonce + 1;
