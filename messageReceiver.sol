@@ -44,7 +44,7 @@ contract UniswapWormholeMessageReceiver {
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // increment lastExecutedSequence
-        lastExecutedSequence += 1;
+        lastExecutedSequence = vm.sequence;
 
         // verify destination
         (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver) = abi.decode(vm.payload,(address[], uint256[], bytes[], address));
