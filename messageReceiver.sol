@@ -18,10 +18,16 @@ contract UniswapWormholeMessageReceiver {
     // keeps track of the sequence number of the last executed wormhole message
     uint64 lastExecutedSequence;
 
-    constructor(address bridgeAddress, bytes32 _messageSender) {
+    // period for which a wormhole message is considered active before it times out and is no longer accepted by the contract
+    uint256 msgValidityPeriod;
+
+    constructor(address bridgeAddress, bytes32 _messageSender, uint256 _msgValidityPeriod) {
         wormhole = IWormhole(bridgeAddress);
         messageSender = _messageSender;
         owner = msg.sender;
+
+        // msgValidityPeriod needs to be set to a value greater than the finality time on ethereum otherwise the message expires even before it can be signed
+        msgValidityPeriod = _msgValidityPeriod;
     }
 
     modifier onlyOwner() {
@@ -45,6 +51,9 @@ contract UniswapWormholeMessageReceiver {
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // increment lastExecutedSequence
         lastExecutedSequence += 1;
+
+        // check if the message is still valid as defined by the validity period
+        require(vm.timestamp + msgValidityPeriod <= block.timestamp, "Message no longer valid");
 
         // verify destination
         (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver) = abi.decode(vm.payload,(address[], uint256[], bytes[], address));
