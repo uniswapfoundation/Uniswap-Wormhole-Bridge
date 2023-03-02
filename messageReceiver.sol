@@ -15,6 +15,9 @@ contract UniswapWormholeMessageReceiver {
 
     IWormhole private immutable wormhole;
 
+    // keeps track of the sequence number of the last executed wormhole message
+    uint64 lastExecutedSequence;
+
     constructor(address bridgeAddress, bytes32 _messageSender) {
         wormhole = IWormhole(bridgeAddress);
         messageSender = _messageSender;
@@ -29,7 +32,7 @@ contract UniswapWormholeMessageReceiver {
     function receiveMessage(bytes[] memory whMessages) public {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessages[0]);
 
-        //validate
+        // validate
         require(valid, reason);
         
         // Ensure the emitterAddress of this VAA is the Uniswap message sender
@@ -38,7 +41,12 @@ contract UniswapWormholeMessageReceiver {
         // Ensure the emitterChainId is Ethereum to prevent impersonation
         require(2 == vm.emitterChainId , "Invalid Emmiter Chain");
 
-        //verify destination
+        // Ensure that the sequence field in the VAA is strictly monotonically increasing
+        require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
+        // increment lastExecutedSequence
+        lastExecutedSequence += 1;
+
+        // verify destination
         (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver) = abi.decode(vm.payload,(address[], uint256[], bytes[], address));
         require (messageReceiver == address(this), "Message not for this dest");
 
@@ -46,7 +54,7 @@ contract UniswapWormholeMessageReceiver {
         require(!processedMessages[vm.hash], "Message already processed");
         processedMessages[vm.hash] = true;
 
-        //execute message
+        // execute message
         require(targets.length == datas.length && targets.length == values.length, 'Inconsistent argument lengths');
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
