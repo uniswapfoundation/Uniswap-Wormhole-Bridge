@@ -50,7 +50,7 @@ contract UniswapWormholeMessageReceiver {
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // increment lastExecutedSequence
-        lastExecutedSequence += 1;
+        lastExecutedSequence = vm.sequence;
 
         // check if the message is still valid as defined by the validity period
         require(vm.timestamp + msgValidityPeriod <= block.timestamp, "Message no longer valid");
