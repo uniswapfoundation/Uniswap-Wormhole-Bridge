@@ -55,7 +55,7 @@ contract UniswapWormholeMessageReceiver {
     // Have the value set to one hour.
     // Note that there is no way to alter this hard coded value. Including such a feature
     // would require some governance structure and some minumum and maximum values.
-    uint256 constant MESSAGE_TIME_OUT_SECONDS = 1 hours;
+    uint256 constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
