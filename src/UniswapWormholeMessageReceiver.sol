@@ -1,7 +1,7 @@
 /**
  * Copyright Uniswap Foundation 2023
- * 
- * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code 
+ *
+ * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,8 +21,23 @@ interface IWormhole {
     function parseAndVerifyVM(bytes calldata encodedVM) external view returns (Structs.VM memory vm, bool valid, string memory reason);
 }
 
+/**
+@title  Uniswap Wormhole Message Receiver
+@dev    this contract receives and executes Uniswap governance proposals that were sent from the UniswapWormholeMessageSender
+        contract on Ethereum via Wormhole.
+        It enforces that proposals are executed in order, but it does not guarantee that all proposals are executed.
+        i.e. The message sequence number of proposals must be strictly monotonically increasing, but need not be consecutive
+        The maximum number of proposals that can be received is therefore UINT64_MAX.
+        For example, if there are proposals 1,2 and 3, then the following are valid executions (not exhaustive):
+            1,2,3
+            1,3
+        But the following are impossible (not exhaustive):
+            1,3,2
+*/
 contract UniswapWormholeMessageReceiver {
     string public name = "Uniswap Wormhole Message Receiver";
+
+    // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
     bytes32 public messageSender;
 
     IWormhole private immutable wormhole;
@@ -44,7 +59,7 @@ contract UniswapWormholeMessageReceiver {
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
-     * @param _messageSender Address of Uniswap Wormhole Message Sender on sending chain.
+     * @param _messageSender // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
      */
     constructor(address bridgeAddress, bytes32 _messageSender) {
         wormhole = IWormhole(bridgeAddress);
@@ -59,7 +74,7 @@ contract UniswapWormholeMessageReceiver {
 
         // validate
         require(valid, reason);
-        
+
         // Ensure the emitterAddress of this VAA is the Uniswap message sender
         require(messageSender == vm.emitterAddress, "Invalid Emitter Address!");
 

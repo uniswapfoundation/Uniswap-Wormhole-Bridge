@@ -24,7 +24,7 @@ interface IWormhole {
 contract UniswapWormholeMessageSender {
     string public name = "Uniswap Wormhole Message Sender";
     address public owner;
-
+    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
     // In the future it could be used to communicate a payload version,
     // but as long as this contract is not upgradable and only sends one message type, it's not needed.
