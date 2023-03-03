@@ -34,6 +34,9 @@ contract UniswapWormholeMessageSender {
 
     IWormhole private immutable wormhole;
 
+    /**
+     * @param _bridgeAddress Address of Wormhole bridge contract on this chain.
+     */
     constructor(address bridgeAddress) {
         wormhole = IWormhole(bridgeAddress);
     }
