@@ -67,7 +67,7 @@ contract UniswapWormholeMessageReceiver {
         require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emitter Chain");
 
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
-        // this also acts as a replay protect mechanism to ensure that already executed messages don't execute again
+        // this also acts as a replay protection mechanism to ensure that already executed messages don't execute again
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // Increase lastExecutedSequence
         lastExecutedSequence = vm.sequence;
