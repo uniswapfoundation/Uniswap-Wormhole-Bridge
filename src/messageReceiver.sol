@@ -43,7 +43,7 @@ contract UniswapWormholeMessageReceiver {
     uint256 constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
 
     /**
-     * @param _bridgeAddress Address of Wormhole bridge contract on this chain.
+     * @param bridgeAddress Address of Wormhole bridge contract on this chain.
      * @param _messageSender Address of Uniswap Wormhole Message Sender on sending chain.
      */
     constructor(address bridgeAddress, bytes32 _messageSender) {
@@ -52,7 +52,7 @@ contract UniswapWormholeMessageReceiver {
     }
 
     /**
-     * @param _whMessage Wormhole message relayed from a source chain.
+     * @param whMessage Wormhole message relayed from a source chain.
      */
     function receiveMessage(bytes memory whMessage) public {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);

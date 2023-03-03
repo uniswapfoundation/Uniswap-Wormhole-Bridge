@@ -32,11 +32,18 @@ contract UniswapWormholeMessageSender {
     IWormhole private immutable wormhole;
 
     /**
-     * @param _bridgeAddress Address of Wormhole bridge contract on this chain.
+     * @param bridgeAddress Address of Wormhole bridge contract on this chain.
      */
     constructor(address bridgeAddress) {
         wormhole = IWormhole(bridgeAddress);
+        owner = msg.sender;
     }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "sender not owner");
+        _;
+    }
+
 
     function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
         bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
