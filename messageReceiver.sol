@@ -50,7 +50,7 @@ contract UniswapWormholeMessageReceiver {
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
         // this also acts as a replay protect mechanism to ensure that already executed messages don't execute again
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
-        // increment lastExecutedSequence
+        // Increase lastExecutedSequence
         lastExecutedSequence = vm.sequence;
 
         // check if the message is still valid as defined by the validity period
