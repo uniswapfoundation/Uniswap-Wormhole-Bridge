@@ -1,7 +1,7 @@
 /**
  * Copyright Uniswap Foundation 2023
- * 
- * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code 
+ *
+ * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ contract UniswapWormholeMessageSender {
     string public name = "Uniswap Wormhole Message Sender";
     address public owner;
     uint32 public nonce;
+    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     uint8 consistencyLevel = 1;
 
     event  MessageSent(bytes payload, address indexed messageReceiver);
@@ -47,7 +48,7 @@ contract UniswapWormholeMessageSender {
 
     function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
         bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
-        
+
         wormhole.publishMessage{value: wormhole.messageFee()}(nonce, payload, consistencyLevel);
         nonce = nonce + 1;
 
