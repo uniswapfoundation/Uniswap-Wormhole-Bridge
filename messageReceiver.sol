@@ -32,15 +32,19 @@ contract UniswapWormholeMessageReceiver {
     // keeps track of the sequence number of the last executed wormhole message
     uint64 lastExecutedSequence;
 
-    // period for which a wormhole message is considered active before it times out and is no longer accepted by the contract
-    uint256 msgValidityPeriod;
+    // Message timeout in seconds: Time out needs to account for:
+    //  Finality time on source chain.
+    //  Time for Wormhole validators to sign and make VAA available to relayers.
+    //  Time to relay VAA to the target chain.
+    //  Congestion on target chain leading to delayed inclusion of transaction in target chain.
+    // Have the value set to one hour.
+    // Note that there is no way to alter this hard coded value. Including such a feature
+    // would require some governance structure and some minumum and maximum values.
+    uint256 constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
 
-    constructor(address bridgeAddress, bytes32 _messageSender, uint256 _msgValidityPeriod) {
+    constructor(address bridgeAddress, bytes32 _messageSender) {
         wormhole = IWormhole(bridgeAddress);
         messageSender = _messageSender;
-
-        // msgValidityPeriod needs to be set to a value greater than the finality time on ethereum otherwise the message expires even before it can be signed
-        msgValidityPeriod = _msgValidityPeriod;
     }
 
     function receiveMessage(bytes memory whMessage) public {
@@ -62,7 +66,7 @@ contract UniswapWormholeMessageReceiver {
         lastExecutedSequence = vm.sequence;
 
         // check if the message is still valid as defined by the validity period
-        require(vm.timestamp + msgValidityPeriod <= block.timestamp, "Message no longer valid");
+        require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS <= block.timestamp, "Message no longer valid");
 
         // verify destination
         (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint256 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], bytes[], address, uint16));
