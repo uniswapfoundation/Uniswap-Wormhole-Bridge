@@ -53,4 +53,8 @@ contract UniswapWormholeMessageSender {
 
         emit MessageSent(payload, messageReceiver);
     }
+
+    function setOwner(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
 }
