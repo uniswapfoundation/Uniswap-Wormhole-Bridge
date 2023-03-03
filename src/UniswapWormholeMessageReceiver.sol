@@ -55,7 +55,7 @@ contract UniswapWormholeMessageReceiver {
     // Have the value set to one hour.
     // Note that there is no way to alter this hard coded value. Including such a feature
     // would require some governance structure and some minumum and maximum values.
-    uint256 constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
+    uint256 constant MESSAGE_TIME_OUT_SECONDS = 1 hours;
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
@@ -88,7 +88,7 @@ contract UniswapWormholeMessageReceiver {
         lastExecutedSequence = vm.sequence;
 
         // check if the message is still valid as defined by the validity period
-        require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS <= block.timestamp, "Message no longer valid");
+        require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
         (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], bytes[], address, uint16));
