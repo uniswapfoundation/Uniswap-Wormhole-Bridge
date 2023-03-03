@@ -35,14 +35,14 @@ interface IWormhole {
             1,3,2
 */
 contract UniswapWormholeMessageReceiver {
-    string public name = "Uniswap Wormhole Message Receiver";
+    string public constant NAME = "Uniswap Wormhole Message Receiver";
 
     // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
-    bytes32 public messageSender;
+    bytes32 public immutable messageSender;
 
     IWormhole private immutable wormhole;
-    uint16 immutable ETHEREUM_CHAIN_ID = 2;
-    uint16 immutable BSC_CHAIN_ID = 4;
+    uint16 public constant ETHEREUM_CHAIN_ID = 2;
+    uint16 public constant BSC_CHAIN_ID = 4;
 
     // keeps track of the sequence number of the last executed wormhole message
     uint64 lastExecutedSequence;
@@ -55,7 +55,7 @@ contract UniswapWormholeMessageReceiver {
     // Have the value set to one hour.
     // Note that there is no way to alter this hard coded value. Including such a feature
     // would require some governance structure and some minumum and maximum values.
-    uint256 constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
+    uint256 public constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
