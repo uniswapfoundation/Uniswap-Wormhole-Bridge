@@ -20,12 +20,6 @@ contract UniswapWormholeMessageSender {
 
     constructor(address bridgeAddress) {
         wormhole = IWormhole(bridgeAddress);
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "sender not owner");
-        _;
     }
 
     function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
@@ -35,9 +29,5 @@ contract UniswapWormholeMessageSender {
         nonce = nonce + 1;
 
         emit MessageSent(payload, messageReceiver);
-    }
-
-    function setOwner(address newOwner) external onlyOwner {
-        owner = newOwner;
     }
 }

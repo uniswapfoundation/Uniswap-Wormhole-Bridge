@@ -7,8 +7,6 @@ interface IWormhole {
 
 contract UniswapWormholeMessageReceiver {
     string public name = "Uniswap Wormhole Message Receiver";
-
-    address public owner;
     bytes32 public messageSender;
 
     IWormhole private immutable wormhole;
@@ -24,15 +22,9 @@ contract UniswapWormholeMessageReceiver {
     constructor(address bridgeAddress, bytes32 _messageSender, uint256 _msgValidityPeriod) {
         wormhole = IWormhole(bridgeAddress);
         messageSender = _messageSender;
-        owner = msg.sender;
 
         // msgValidityPeriod needs to be set to a value greater than the finality time on ethereum otherwise the message expires even before it can be signed
         msgValidityPeriod = _msgValidityPeriod;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "sender not owner");
-        _;
     }
 
     function receiveMessage(bytes memory whMessage) public {
@@ -67,9 +59,5 @@ contract UniswapWormholeMessageReceiver {
             (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
             require(success, 'Sub-call failed');
         }
-    }
-
-    function setOwner(address newOwner) external onlyOwner {
-        owner = newOwner;
     }
 }
