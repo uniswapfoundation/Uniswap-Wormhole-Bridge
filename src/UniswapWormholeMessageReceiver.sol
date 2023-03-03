@@ -36,6 +36,7 @@ interface IWormhole {
 */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
+    bytes32 constant expectedMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
     // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
     bytes32 public immutable messageSender;
@@ -91,7 +92,8 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], bytes[], address, uint16));
+        (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(bytes32, address[], uint256[], bytes[], address, uint16));
+        require (expectedMessagePayloadVersion == receivedMessagePayloadVersion, "The payload version identifier of the Wormhole message does not match the expected one.");
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 

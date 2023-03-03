@@ -24,13 +24,14 @@ interface IWormhole {
 contract UniswapWormholeMessageSender {
     string public constant NAME = "Uniswap Wormhole Message Sender";
     address public owner;
-    
+
     // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
     // In the future it could be used to communicate a payload version,
     // but as long as this contract is not upgradable and only sends one message type, it's not needed.
     uint32 public constant NONCE = 0;
     uint8 public constant CONSISTENCY_LEVEL = 1;
+    bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
     event  MessageSent(bytes payload, address indexed messageReceiver);
 
@@ -57,7 +58,7 @@ contract UniswapWormholeMessageSender {
      * @param receiverChainId chain id of the receiver chain
      */
     function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
-        bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
+        bytes memory payload = abi.encode(messagePayloadVersion,targets,values,datas,messageReceiver,receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
 
         wormhole.publishMessage{value: wormhole.messageFee()}(NONCE, payload, CONSISTENCY_LEVEL);
 
