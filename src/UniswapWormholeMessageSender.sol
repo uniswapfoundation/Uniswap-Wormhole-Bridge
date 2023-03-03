@@ -48,9 +48,18 @@ contract UniswapWormholeMessageSender {
         _;
     }
 
-
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
-        bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
+    /**
+     * @param targets from the governance proposal
+     * @param values from the governance proposal
+     * @param signatures from the governance proposal
+     * @param calldatas from the governance proposal
+     * @param messageReceiver address of the UniswapWormholeMessageReceiver contract on the target chain.
+        SECURITY: This value is necessary such that if this contract also sends messages to other contracts they cannot be confused with one another.
+     * @param receiverChainId Wormhole chain_id of the target chain.
+        SECURITY: This value is neceassary such that messages cannot be replayed on other chains with the same deployment.
+    */
+    function sendMessage(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+        bytes memory payload = abi.encode(targets,values,signatures,calldatas,messageReceiver,receiverChainId);
 
         wormhole.publishMessage{value: wormhole.messageFee()}(NONCE, payload, CONSISTENCY_LEVEL);
 

@@ -35,6 +35,8 @@ interface IWormhole {
             1,3,2
 */
 contract UniswapWormholeMessageReceiver {
+    event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data);
+
     string public constant NAME = "Uniswap Wormhole Message Receiver";
 
     // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
@@ -91,14 +93,22 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], bytes[], address, uint16));
+        (address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], string[], bytes[], address, uint16));
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // execute message
-        require(targets.length == datas.length && targets.length == values.length, 'Inconsistent argument lengths');
+        require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, 'Inconsistent argument lengths');
         for (uint256 i = 0; i < targets.length; i++) {
-            (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
+
+            bytes memory callData;
+            if (bytes(signatures[i]).length == 0) {
+                callData = calldatas[i];
+            } else {
+                callData = abi.encodePacked(bytes4(keccak256(bytes(signatures[i]))), calldatas[i]);
+            }
+
+            (bool success, ) = targets[i].call{value: values[i]}(callData);
             require(success, 'Sub-call failed');
         }
     }
