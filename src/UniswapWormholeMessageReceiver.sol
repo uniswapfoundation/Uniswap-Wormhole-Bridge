@@ -36,6 +36,8 @@ interface IWormhole {
 */
 contract UniswapWormholeMessageReceiver {
     string public name = "Uniswap Wormhole Message Receiver";
+
+    // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
     bytes32 public messageSender;
 
     IWormhole private immutable wormhole;
@@ -57,7 +59,7 @@ contract UniswapWormholeMessageReceiver {
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
-     * @param _messageSender Address of Uniswap Wormhole Message Sender on sending chain.
+     * @param _messageSender // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
      */
     constructor(address bridgeAddress, bytes32 _messageSender) {
         wormhole = IWormhole(bridgeAddress);
