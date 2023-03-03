@@ -64,7 +64,7 @@ contract UniswapWormholeMessageReceiver {
         require(messageSender == vm.emitterAddress, "Invalid Emitter Address!");
 
         // Ensure the emitterChainId is Ethereum to prevent impersonation
-        require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emmiter Chain");
+        require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emitter Chain");
 
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
         // this also acts as a replay protect mechanism to ensure that already executed messages don't execute again

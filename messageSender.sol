@@ -18,15 +18,12 @@ pragma solidity ^0.8.9;
 
 interface IWormhole {
     function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel) external payable returns (uint64 sequence);
-
     function messageFee() external view returns (uint256);
 }
 
 contract UniswapWormholeMessageSender {
     string public name = "Uniswap Wormhole Message Sender";
-
     address public owner;
-
     uint32 public nonce;
     uint8 consistencyLevel = 1;
 
