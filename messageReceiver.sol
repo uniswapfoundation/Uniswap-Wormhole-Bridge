@@ -11,9 +11,9 @@ contract UniswapWormholeMessageReceiver {
     address public owner;
     bytes32 public messageSender;
 
-    mapping(bytes32 => bool) public processedMessages;
-
     IWormhole private immutable wormhole;
+    uint16 immutable ETHEREUM_CHAIN_ID = 2;
+    uint16 immutable BSC_CHAIN_ID = 4;
 
     // keeps track of the sequence number of the last executed wormhole message
     uint64 lastExecutedSequence;
@@ -35,8 +35,8 @@ contract UniswapWormholeMessageReceiver {
         _;
     }
 
-    function receiveMessage(bytes[] memory whMessages) public {
-        (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessages[0]);
+    function receiveMessage(bytes memory whMessage) public {
+        (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate
         require(valid, reason);
@@ -45,9 +45,10 @@ contract UniswapWormholeMessageReceiver {
         require(messageSender == vm.emitterAddress, "Invalid Emitter Address!");
 
         // Ensure the emitterChainId is Ethereum to prevent impersonation
-        require(2 == vm.emitterChainId , "Invalid Emmiter Chain");
+        require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emmiter Chain");
 
         // Ensure that the sequence field in the VAA is strictly monotonically increasing
+        // this also acts as a replay protect mechanism to ensure that already executed messages don't execute again
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // increment lastExecutedSequence
         lastExecutedSequence = vm.sequence;
@@ -56,12 +57,9 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + msgValidityPeriod <= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver) = abi.decode(vm.payload,(address[], uint256[], bytes[], address));
+        (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint256 receiverChainId) = abi.decode(vm.payload,(address[], uint256[], bytes[], address, uint16));
         require (messageReceiver == address(this), "Message not for this dest");
-
-        // replay protection
-        require(!processedMessages[vm.hash], "Message already processed");
-        processedMessages[vm.hash] = true;
+        require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // execute message
         require(targets.length == datas.length && targets.length == values.length, 'Inconsistent argument lengths');
