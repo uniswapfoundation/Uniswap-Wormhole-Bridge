@@ -21,6 +21,19 @@ interface IWormhole {
     function parseAndVerifyVM(bytes calldata encodedVM) external view returns (Structs.VM memory vm, bool valid, string memory reason);
 }
 
+/**
+@title  Uniswap Wormhole Message Receiver
+@dev    this contract receives and executes Uniswap governance proposals that were sent from the UniswapWormholeMessageSender
+        contract on Ethereum via Wormhole.
+        It enforces that proposals are executed in order, but it does not guarantee that all proposals are executed.
+        i.e. The message sequence number of proposals must be strictly monotonically increasing, but need not be consecutive
+        The maximum number of proposals that can be received is therefore UINT64_MAX.
+        For example, if there are proposals 1,2 and 3, then the following are valid executions (not exhaustive):
+            1,2,3
+            1,3
+        But the following are impossible (not exhaustive):
+            1,3,2
+*/
 contract UniswapWormholeMessageReceiver {
     string public name = "Uniswap Wormhole Message Receiver";
     bytes32 public messageSender;
