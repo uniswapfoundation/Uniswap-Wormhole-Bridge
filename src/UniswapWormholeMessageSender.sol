@@ -26,6 +26,10 @@ contract UniswapWormholeMessageSender {
     address public owner;
     uint32 public nonce;
     // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
+    // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
+    // In the future it could be used to communicate a payload version,
+    // but as long as this contract is not upgradable and only sends one message type, it's not needed.
+    uint32 constant public nonce = 0;
     uint8 consistencyLevel = 1;
 
     event  MessageSent(bytes payload, address indexed messageReceiver);
@@ -50,7 +54,6 @@ contract UniswapWormholeMessageSender {
         bytes memory payload = abi.encode(targets,values,datas,messageReceiver,receiverChainId);
 
         wormhole.publishMessage{value: wormhole.messageFee()}(nonce, payload, consistencyLevel);
-        nonce = nonce + 1;
 
         emit MessageSent(payload, messageReceiver);
     }
