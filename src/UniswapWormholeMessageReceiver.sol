@@ -79,8 +79,16 @@ contract UniswapWormholeMessageReceiver {
         // Ensure the emitterChainId is Ethereum to prevent impersonation
         require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emitter Chain");
 
-        // Ensure that the sequence field in the VAA is strictly monotonically increasing
-        // this also acts as a replay protection mechanism to ensure that already executed messages don't execute again
+        /**
+         * Ensure that the sequence field in the VAA is strictly monotonically increasing
+         * this also acts as a replay protection mechanism to ensure that already executed messages don't execute again
+         *
+         * WARNING: Be mindful that if the sender is ever adapted to support multiple consistency levels, the sequence number
+         * enforcement in the receiver could result in delivery of a message with a higher sequence number first and thus
+         * invalidate the lower sequence number message from being processable on the receiver.  As long as CONSISTENCY_LEVEL
+         * remains a constant this is a non-issue.  If this changes, changes to the receiver may be required to address messages
+         * of variable consistency.
+         */
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // Increase lastExecutedSequence
         lastExecutedSequence = vm.sequence;
