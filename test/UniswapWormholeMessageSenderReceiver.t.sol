@@ -72,25 +72,11 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return address(wormholeAddress);
     }
 
-    function generateSignedVaa(uint16 emitterChainId, bytes32 emitterAddress, uint64 sequence, bytes memory payload) public returns(bytes memory vaa) {
-        vm.warp(timestamp);
-
-        bytes memory body = abi.encodePacked(
-            uint32(block.timestamp),
-            uint32(0), //nonce is zero
-            emitterChainId, //emitter chain id for ethereum is 2
-            emitterAddress, //expected emitter address
-            sequence, //sequence
-            uint8(1), //consistency level
-            payload
-        );
-
-        bytes32 hash = keccak256(abi.encodePacked(keccak256(body)));
-
+    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns(bytes memory vaa) {
         bytes memory signatures = new bytes(0);
 
         for (uint256 i = 0; i < quorumGuardians; ++i) {
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(i + 1, hash);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(i + 1, _hash);
             signatures = abi.encodePacked(
                 signatures,
                 uint8(i), // Guardian index of the signature
@@ -109,12 +95,91 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         );
     }
 
+    function generateSignedVaa(uint16 emitterChainId, bytes32 emitterAddress, uint64 sequence, bytes memory payload) public returns(bytes memory) {
+        vm.warp(timestamp);
+
+        // format the message body
+        bytes memory body = abi.encodePacked(
+            uint32(block.timestamp),
+            uint32(0), //nonce is zero
+            emitterChainId, //emitter chain id for ethereum is 2
+            emitterAddress, //expected emitter address
+            sequence, //sequence
+            uint8(1), //consistency level
+            payload
+        );
+
+        // compute the hash of the body
+        bytes32 _hash = keccak256(abi.encodePacked(keccak256(body)));
+
+        // return the signed VAA
+        return simulateSignedVaa(body, _hash);
+    }
+
+     function updateWormholeMessageFee(uint256 newFee) public returns(bytes memory) {
+        bytes32 coreModule = 0x00000000000000000000000000000000000000000000000000000000436f7265;
+
+        // `SetMessageFee` governance payload
+        bytes memory payload = abi.encodePacked(coreModule, uint8(3), uint16(wormhole.chainId()), newFee);
+
+        // construct the `SetMessageFee` governance VAA
+        bytes memory body = abi.encodePacked(
+            uint32(block.timestamp),
+            uint32(0), //nonce is zero
+            uint16(1), //governance chain
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000004), //governance contract
+            uint64(0), //sequence
+            uint8(1), //consistency level
+            payload
+        );
+
+        // compute the hash of the body
+        bytes32 _hash = keccak256(abi.encodePacked(keccak256(body)));
+
+        // update the message fee
+        wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
+    }
+
     function generateMessagePayload(address[] memory targetValues, uint256[] memory msgValues, bytes[] memory dataValues, uint16 receiverChainId, address receiverAddress) public returns(bytes memory payload) {
        payload = abi.encode(targetValues, msgValues, dataValues, bytes32(uint256(uint160(receiverAddress))), receiverChainId);
     }
 
+    function testUpdateWormholeMessageFee(uint256 newFee) public {
+        uint256 currentFee = wormhole.messageFee();
+
+        vm.assume(currentFee != newFee);
+
+        updateWormholeMessageFee(newFee);
+
+        // verify the state change
+        currentFee = wormhole.messageFee();
+        assertEq(currentFee, newFee);
+    }
+
     function testSendMessageSuccess() public {
-        uniSender.sendMessage(targets, values, datas, address(uniReceiver), bsc_chain_id);
+        uniSender.sendMessage{value: wormhole.messageFee()}(targets, values, datas, address(uniReceiver), bsc_chain_id);
+    }
+
+    function testSendMessageFailureZeroMessageFee(uint256 messageFee) public {
+        vm.assume(messageFee > 0);
+
+        // update the wormhole message fee
+        updateWormholeMessageFee(messageFee);
+
+        vm.expectRevert("invalid message fee");
+        uniSender.sendMessage{value: 0}(targets, values, datas, address(uniReceiver), bsc_chain_id);
+    }
+
+    function testSendMessageFailureMessageFeeTooLarge() public {
+        // update the wormhole message fee
+        uint256 messageFee = 1e6;
+        updateWormholeMessageFee(messageFee);
+
+        // call `sendMessage` with a fee greater than what is set in the wormhole contract
+        uint256 invalidFee = 1e18;
+
+        vm.expectRevert("invalid message fee");
+        uniSender.sendMessage{value: invalidFee}(targets, values, datas, address(uniReceiver), bsc_chain_id);
     }
 
     function testReceiveMessageSuccess() public {
