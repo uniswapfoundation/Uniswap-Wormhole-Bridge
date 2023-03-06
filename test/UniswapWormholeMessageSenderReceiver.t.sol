@@ -184,7 +184,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
-        vm.warp(timestamp + 61 minutes);
+        vm.warp(timestamp + 2881 minutes);
         vm.expectRevert("Message no longer valid");
         uniReceiver.receiveMessage(whMessage);
     }

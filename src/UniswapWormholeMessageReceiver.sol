@@ -1,8 +1,6 @@
 /**
  * Copyright Uniswap Foundation 2023
  *
- * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code
- *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -55,7 +53,7 @@ contract UniswapWormholeMessageReceiver {
     // Have the value set to one hour.
     // Note that there is no way to alter this hard coded value. Including such a feature
     // would require some governance structure and some minumum and maximum values.
-    uint256 public constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
+    uint256 public constant MESSAGE_TIME_OUT_SECONDS = 2 days;
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
