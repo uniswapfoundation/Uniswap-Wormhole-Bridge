@@ -4,5 +4,5 @@
 pragma solidity ^0.8.9;
 
 interface IUniswapWormholeMessageSender {
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external;
+    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external payable;
 }
