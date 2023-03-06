@@ -56,11 +56,15 @@ contract UniswapWormholeMessageReceiver {
     uint256 public constant MESSAGE_TIME_OUT_SECONDS = 2 days;
 
     /**
-     * @param bridgeAddress Address of Wormhole bridge contract on this chain.
-     * @param _messageSender // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
+     * @param wormholeAddress Address of Wormhole core messaging contract on this chain.
+     * @param _messageSender Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
      */
-    constructor(address bridgeAddress, bytes32 _messageSender) {
-        wormhole = IWormhole(bridgeAddress);
+    constructor(address wormholeAddress, bytes32 _messageSender) {
+        // sanity check constructor args
+        require(wormholeAddress != address(0), "invalid wormhole address");
+        require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "invalid sender contract");
+
+        wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
     }
 
