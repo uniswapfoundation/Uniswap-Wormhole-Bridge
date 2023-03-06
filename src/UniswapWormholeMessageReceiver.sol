@@ -1,8 +1,6 @@
 /**
  * Copyright Uniswap Foundation 2023
  *
- * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code
- *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -56,7 +54,7 @@ contract UniswapWormholeMessageReceiver {
     // Have the value set to one hour.
     // Note that there is no way to alter this hard coded value. Including such a feature
     // would require some governance structure and some minumum and maximum values.
-    uint256 public constant MESSAGE_TIME_OUT_SECONDS = 60 * 60;
+    uint256 public constant MESSAGE_TIME_OUT_SECONDS = 2 days;
 
     /**
      * @param bridgeAddress Address of Wormhole bridge contract on this chain.
@@ -82,8 +80,16 @@ contract UniswapWormholeMessageReceiver {
         // Ensure the emitterChainId is Ethereum to prevent impersonation
         require(vm.emitterChainId == ETHEREUM_CHAIN_ID, "Invalid Emitter Chain");
 
-        // Ensure that the sequence field in the VAA is strictly monotonically increasing
-        // this also acts as a replay protection mechanism to ensure that already executed messages don't execute again
+        /**
+         * Ensure that the sequence field in the VAA is strictly monotonically increasing
+         * this also acts as a replay protection mechanism to ensure that already executed messages don't execute again
+         *
+         * WARNING: Be mindful that if the sender is ever adapted to support multiple consistency levels, the sequence number
+         * enforcement in the receiver could result in delivery of a message with a higher sequence number first and thus
+         * invalidate the lower sequence number message from being processable on the receiver.  As long as CONSISTENCY_LEVEL
+         * remains a constant this is a non-issue.  If this changes, changes to the receiver may be required to address messages
+         * of variable consistency.
+         */
         require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
         // Increase lastExecutedSequence
         lastExecutedSequence = vm.sequence;
@@ -92,7 +98,7 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload,(bytes32, address[], uint256[], bytes[], address, uint16));
+        (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
         require (expectedMessagePayloadVersion == receivedMessagePayloadVersion, "The payload version identifier of the Wormhole message does not match the expected one.");
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
@@ -105,3 +111,5 @@ contract UniswapWormholeMessageReceiver {
         }
     }
 }
+
+

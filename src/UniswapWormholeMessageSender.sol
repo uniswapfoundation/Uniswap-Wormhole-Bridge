@@ -1,8 +1,6 @@
 /**
  * Copyright Uniswap Foundation 2023
  *
- * This code is based on code deployed here: https://bscscan.com/address/0x3ee84fFaC05E05907E6AC89921f000aE966De001#code
- *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -31,11 +29,18 @@ contract UniswapWormholeMessageSender {
     string public constant NAME = "Uniswap Wormhole Message Sender";
     address public owner;
 
-    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
-    // In the future it could be used to communicate a payload version,
-    // but as long as this contract is not upgradable and only sends one message type, it's not needed.
     uint32 public constant NONCE = 0;
+
+    /**
+     * consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
+     *
+     * WARNING: Be mindful that if the sender is ever adapted to support multiple consistency levels, the sequence number
+     * enforcement in the receiver could result in delivery of a message with a higher sequence number first and thus
+     * invalidate the lower sequence number message from being processable on the receiver.  As long as CONSISTENCY_LEVEL
+     * remains a constant this is a non-issue.  If this changes, changes to the receiver may be required to address messages
+     * of variable consistency.
+     */
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
     event  MessageSent(bytes payload, address indexed messageReceiver);
@@ -62,9 +67,19 @@ contract UniswapWormholeMessageSender {
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+        // cache wormhole instance and verify that the caller sent enough value to cover the Wormhole message fee
+        IWormhole _wormhole = wormhole;
+        uint256 messageFee = _wormhole.messageFee();
+
+        require(msg.value == messageFee, "invalid message fee");
+
+        // format the message payload
         bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
-        wormhole.publishMessage{value: wormhole.messageFee()}(NONCE, payload, CONSISTENCY_LEVEL);
+
+        // send the payload by invoking the Wormhole core contract
+        _wormhole.publishMessage{value: messageFee}(NONCE, payload, CONSISTENCY_LEVEL);
+
         emit MessageSent(payload, messageReceiver);
     }
 
