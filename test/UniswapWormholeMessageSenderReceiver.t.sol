@@ -72,7 +72,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return address(wormholeAddress);
     }
 
-    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns(bytes memory vaa) {
+    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal pure returns(bytes memory vaa) {
         bytes memory signatures = new bytes(0);
 
         for (uint256 i = 0; i < quorumGuardians; ++i) {
@@ -116,7 +116,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return simulateSignedVaa(body, _hash);
     }
 
-     function updateWormholeMessageFee(uint256 newFee) public returns(bytes memory) {
+     function updateWormholeMessageFee(uint256 newFee) public {
         bytes32 coreModule = 0x00000000000000000000000000000000000000000000000000000000436f7265;
 
         // `SetMessageFee` governance payload
@@ -138,10 +138,6 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         // update the message fee
         wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
-    }
-
-    function generateMessagePayload(address[] memory targetValues, uint256[] memory msgValues, bytes[] memory dataValues, uint16 receiverChainId, address receiverAddress) public returns(bytes memory payload) {
-       payload = abi.encode(targetValues, msgValues, dataValues, bytes32(uint256(uint160(receiverAddress))), receiverChainId);
     }
 
     function testUpdateWormholeMessageFee(uint256 newFee) public {

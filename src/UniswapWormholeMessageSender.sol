@@ -67,7 +67,7 @@ contract UniswapWormholeMessageSender {
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
         // cache wormhole instance and verify that the caller sent enough value to cover the Wormhole message fee
         IWormhole _wormhole = wormhole;
         uint256 messageFee = _wormhole.messageFee();
