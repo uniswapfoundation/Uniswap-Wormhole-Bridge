@@ -21,6 +21,12 @@ interface IWormhole {
     function messageFee() external view returns (uint256);
 }
 
+bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+
+function generateMessagePayload(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) pure returns(bytes memory payload) {
+    payload = abi.encode(messagePayloadVersion,targets,values,calldatas,messageReceiver,receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
+}
+
 contract UniswapWormholeMessageSender {
     string public constant NAME = "Uniswap Wormhole Message Sender";
     address public owner;
@@ -31,7 +37,6 @@ contract UniswapWormholeMessageSender {
     // but as long as this contract is not upgradable and only sends one message type, it's not needed.
     uint32 public constant NONCE = 0;
     uint8 public constant CONSISTENCY_LEVEL = 1;
-    bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
     event  MessageSent(bytes payload, address indexed messageReceiver);
 
@@ -53,15 +58,13 @@ contract UniswapWormholeMessageSender {
     /**
      * @param targets array of target addresses
      * @param values array of values
-     * @param datas array of datas
+     * @param calldatas array of calldatas
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
-        bytes memory payload = abi.encode(messagePayloadVersion,targets,values,datas,messageReceiver,receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
-
+    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+        bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
         wormhole.publishMessage{value: wormhole.messageFee()}(NONCE, payload, CONSISTENCY_LEVEL);
-
         emit MessageSent(payload, messageReceiver);
     }
 
