@@ -23,8 +23,8 @@ interface IWormhole {
 
 bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
-function generateMessagePayload(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) pure returns(bytes memory payload) {
-    payload = abi.encode(messagePayloadVersion,targets,values,calldatas,messageReceiver,receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
+function generateMessagePayload(address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas, address _messageReceiver, uint16 _receiverChainId) pure returns(bytes memory) {
+    return abi.encode(messagePayloadVersion,_targets,_values,_calldatas,_messageReceiver,_receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
 }
 
 contract UniswapWormholeMessageSender {

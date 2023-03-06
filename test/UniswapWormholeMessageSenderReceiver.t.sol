@@ -233,5 +233,31 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uniReceiver.receiveMessage(whMessage);
     }
 
+    // this is a modification of generateMessagePayload() because we need to control _messagePayloadVersion for the following tests.
+    function generateMessagePayloadWithVersion(bytes32 _messagePayloadVersion, address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas, address _messageReceiver, uint16 _receiverChainId) private pure returns(bytes memory payload) {
+        payload = abi.encode(_messagePayloadVersion,_targets,_values,_calldatas,_messageReceiver,_receiverChainId);
+    }
+
+    function testInvalidMessageType() public {
+        bytes32 correctMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+        bytes32 invalidMessagePayloadVersion = keccak256(abi.encode("invalid"));
+
+        // we are using the locally specified generateMessagePayloadWithVersion() here, so first make sure that it works
+        uint64 sequence = 2;
+        bytes memory payload = generateMessagePayloadWithVersion(correctMessagePayloadVersion, targets, values, datas, address(uniReceiver), bsc_chain_id);
+        bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        uniReceiver.receiveMessage(whMessage);
+
+        // now make sure that it fails with a wrong message type
+        sequence = 3;
+        payload = generateMessagePayloadWithVersion(invalidMessagePayloadVersion, targets, values, datas, address(uniReceiver), bsc_chain_id);
+        whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        vm.expectRevert("The payload version identifier of the Wormhole message does not match the expected one.");
+        uniReceiver.receiveMessage(whMessage);
+    }
 
 }
