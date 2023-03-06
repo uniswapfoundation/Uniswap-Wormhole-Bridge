@@ -67,7 +67,7 @@ contract UniswapWormholeMessageReceiver {
     /**
      * @param whMessage Wormhole message relayed from a source chain.
      */
-    function receiveMessage(bytes memory whMessage) public {
+    function receiveMessage(bytes calldata whMessage) public {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate
@@ -101,11 +101,16 @@ contract UniswapWormholeMessageReceiver {
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
-        // execute message
-        require(targets.length == datas.length && targets.length == values.length, 'Inconsistent argument lengths');
-        for (uint256 i = 0; i < targets.length; i++) {
+        // cache target length and verify that each argument has the same length
+        uint256 targetsLength = targets.length;
+        require(targetsLength == datas.length && targetsLength == values.length, 'Inconsistent argument lengths');
+
+        // execute each message
+        for (uint256 i = 0; i < targetsLength;) {
             (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
             require(success, 'Sub-call failed');
+
+            unchecked { i += 1; }
         }
     }
 }
