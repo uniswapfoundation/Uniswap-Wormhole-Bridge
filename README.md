@@ -1,4 +1,4 @@
-# Uniswap-Wormhole Bridge
+# Uniswap-Wormhole-Bridge
 
 Collaboration with the Wormhole and Uniswap team on governance messaging sender and receiver smart contracts.
 
