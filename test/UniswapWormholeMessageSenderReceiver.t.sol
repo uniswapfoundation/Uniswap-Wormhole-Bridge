@@ -321,7 +321,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
-        vm.expectRevert("The payload version identifier of the Wormhole message does not match the expected one.");
+        vm.expectRevert("Wrong payload version");
         uniReceiver.receiveMessage(whMessage);
     }
 

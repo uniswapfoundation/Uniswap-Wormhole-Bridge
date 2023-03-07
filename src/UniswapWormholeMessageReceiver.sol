@@ -34,7 +34,7 @@ interface IWormhole {
 */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
-    bytes32 constant expectedMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+    bytes32 constant expectedMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
     // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
     bytes32 public immutable messageSender;
@@ -98,15 +98,15 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
-        require (expectedMessagePayloadVersion == receivedMessagePayloadVersion, "The payload version identifier of the Wormhole message does not match the expected one.");
+        (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory calldatas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
+        require (expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // execute message
-        require(targets.length == datas.length && targets.length == values.length, 'Inconsistent argument lengths');
+        require(targets.length == calldatas.length && targets.length == values.length, 'Inconsistent argument lengths');
         for (uint256 i = 0; i < targets.length; i++) {
-            (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
+            (bool success, ) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, 'Sub-call failed');
         }
     }

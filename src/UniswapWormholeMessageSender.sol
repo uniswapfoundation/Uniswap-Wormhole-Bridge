@@ -19,7 +19,7 @@ interface IWormhole {
     function messageFee() external view returns (uint256);
 }
 
-bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderv1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
 function generateMessagePayload(address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas, address _messageReceiver, uint16 _receiverChainId) pure returns(bytes memory) {
     return abi.encode(messagePayloadVersion,_targets,_values,_calldatas,_messageReceiver,_receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
