@@ -27,8 +27,14 @@ function generateMessagePayload(address[] memory _targets, uint256[] memory _val
 
 contract UniswapWormholeMessageSender {
     string public constant NAME = "Uniswap Wormhole Message Sender";
+
+    // address of the permissioned message sender
     address public owner;
 
+    // intermediate state when transfering contract ownership
+    address public pendingOwner;
+
+    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
     uint32 public constant NONCE = 0;
 
@@ -48,16 +54,14 @@ contract UniswapWormholeMessageSender {
     IWormhole private immutable wormhole;
 
     /**
-     * @param bridgeAddress Address of Wormhole bridge contract on this chain.
+     * @param wormholeAddress Address of Wormhole core messaging contract on this chain.
      */
-    constructor(address bridgeAddress) {
-        wormhole = IWormhole(bridgeAddress);
-        owner = msg.sender;
-    }
+    constructor(address wormholeAddress) {
+        // sanity check constructor args
+        require(wormholeAddress != address(0), "invalid wormhole address");
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "sender not owner");
-        _;
+        wormhole = IWormhole(wormholeAddress);
+        owner = msg.sender;
     }
 
     /**
@@ -84,9 +88,39 @@ contract UniswapWormholeMessageSender {
     }
 
     /**
-     * @param newOwner address of new owner contract or EOA
+     * @notice Starts process of transferring ownership of the contract. It saves
+     * the caller's address in the `pendingOwner` state variable.
+     * @param newOwner Address of the `pendingOwner`.
      */
-    function setOwner(address newOwner) external onlyOwner {
-        owner = newOwner;
+    function submitOwnershipTransferRequest(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "newOwner cannot equal address(0)");
+
+        pendingOwner = newOwner;
+    }
+
+    /**
+     * @notice Cancels the ownership transfer process.
+     * @dev Sets the `pendingOwner` state variable to the zero address.
+     */
+    function cancelOwnershipTransferRequest() public onlyOwner {
+        pendingOwner = address(0);
+    }
+
+    /**
+     * @notice Transfers ownership of the contract to the `pendingOwner`.
+     * @dev It updates the `owner` state variable with the `pendingOwner` state
+     * variable after validating that the caller is the `pendingOwner`.
+     */
+    function confirmOwnershipTransferRequest() public {
+        require(msg.sender == pendingOwner, "caller must be pendingOwner");
+
+        // update the owner in the contract state and reset the pending owner
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "sender not owner");
+        _;
     }
 }

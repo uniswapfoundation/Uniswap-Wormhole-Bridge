@@ -57,18 +57,22 @@ contract UniswapWormholeMessageReceiver {
     uint256 public constant MESSAGE_TIME_OUT_SECONDS = 2 days;
 
     /**
-     * @param bridgeAddress Address of Wormhole bridge contract on this chain.
-     * @param _messageSender // address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
+     * @param wormholeAddress Address of Wormhole core messaging contract on this chain.
+     * @param _messageSender Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format, i.e. 12 zero bytes followed by a 20-byte Ethereum address
      */
-    constructor(address bridgeAddress, bytes32 _messageSender) {
-        wormhole = IWormhole(bridgeAddress);
+    constructor(address wormholeAddress, bytes32 _messageSender) {
+        // sanity check constructor args
+        require(wormholeAddress != address(0), "invalid wormhole address");
+        require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "invalid sender contract");
+
+        wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
     }
 
     /**
      * @param whMessage Wormhole message relayed from a source chain.
      */
-    function receiveMessage(bytes memory whMessage) public {
+    function receiveMessage(bytes calldata whMessage) public {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate
@@ -103,11 +107,16 @@ contract UniswapWormholeMessageReceiver {
         require (messageReceiver == address(this), "Message not for this dest");
         require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
-        // execute message
-        require(targets.length == calldatas.length && targets.length == values.length, 'Inconsistent argument lengths');
-        for (uint256 i = 0; i < targets.length; i++) {
+        // cache target length and verify that each argument has the same length
+        uint256 targetsLength = targets.length;
+        require(targetsLength == calldatas.length && targetsLength == values.length, 'Inconsistent argument lengths');
+
+        // execute each message
+        for (uint256 i = 0; i < targetsLength;) {
             (bool success, ) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, 'Sub-call failed');
+
+            unchecked { i += 1; }
         }
     }
 }
