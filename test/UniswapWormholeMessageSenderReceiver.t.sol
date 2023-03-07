@@ -46,7 +46,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         datas.push(abi.encodePacked("random")); // setting to a random byte as target is set to an EOA for now
     }
 
-    function setupWormhole() public returns(address) {
+    function setupWormhole() public returns (address) {
         Implementation wormholeImpl = new Implementation();
         Setup wormholeSetup = new Setup();
 
@@ -71,7 +71,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return address(wormholeAddress);
     }
 
-    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns(bytes memory vaa) {
+    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns (bytes memory vaa) {
         bytes memory signatures = new bytes(0);
 
         for (uint256 i = 0; i < quorumGuardians; ++i) {
@@ -94,7 +94,10 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         );
     }
 
-    function generateSignedVaa(uint16 emitterChainId, bytes32 emitterAddress, uint64 sequence, bytes memory payload) public returns(bytes memory) {
+    function generateSignedVaa(uint16 emitterChainId, bytes32 emitterAddress, uint64 sequence, bytes memory payload)
+        public
+        returns (bytes memory)
+    {
         vm.warp(timestamp);
 
         // format the message body
@@ -115,7 +118,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return simulateSignedVaa(body, _hash);
     }
 
-     function updateWormholeMessageFee(uint256 newFee) public returns(bytes memory) {
+    function updateWormholeMessageFee(uint256 newFee) public {
         bytes32 coreModule = 0x00000000000000000000000000000000000000000000000000000000436f7265;
 
         // `SetMessageFee` governance payload
@@ -139,8 +142,15 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
     }
 
-    function generateMessagePayload(address[] memory targetValues, uint256[] memory msgValues, bytes[] memory dataValues, uint16 receiverChainId, address receiverAddress) public returns(bytes memory payload) {
-       payload = abi.encode(targetValues, msgValues, dataValues, bytes32(uint256(uint160(receiverAddress))), receiverChainId);
+    function generateMessagePayload(
+        address[] memory targetValues,
+        uint256[] memory msgValues,
+        bytes[] memory dataValues,
+        uint16 receiverChainId,
+        address receiverAddress
+    ) public returns (bytes memory payload) {
+        payload =
+            abi.encode(targetValues, msgValues, dataValues, bytes32(uint256(uint160(receiverAddress))), receiverChainId);
     }
 
     function testUpdateWormholeMessageFee(uint256 newFee) public {
@@ -256,7 +266,8 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInconsistentPayload() public {
         uint64 sequence = 2;
 
-        bytes memory payload = generateMessagePayload(incorrectLengthTargets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload =
+            generateMessagePayload(incorrectLengthTargets, values, datas, bsc_chain_id, address(uniReceiver));
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -292,7 +303,8 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         address[] memory failingTargets = new address[](1);
         failingTargets[0] = 0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84;
 
-        bytes memory payload = generateMessagePayload(failingTargets, values, datas, bsc_chain_id - 1, address(uniReceiver));
+        bytes memory payload =
+            generateMessagePayload(failingTargets, values, datas, bsc_chain_id - 1, address(uniReceiver));
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -391,13 +403,8 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         assertEq(uniSender.pendingOwner(), address(0));
     }
 
-    function testConfirmOwnershipTransferRequestNotPendingOwner(
-        address pendingOwner
-    ) public {
-        vm.assume(
-            pendingOwner != address(0) &&
-            pendingOwner != address(this)
-        );
+    function testConfirmOwnershipTransferRequestNotPendingOwner(address pendingOwner) public {
+        vm.assume(pendingOwner != address(0) && pendingOwner != address(this));
 
         // set the pending owner and confirm the pending owner state variable
         uniSender.submitOwnershipTransferRequest(pendingOwner);

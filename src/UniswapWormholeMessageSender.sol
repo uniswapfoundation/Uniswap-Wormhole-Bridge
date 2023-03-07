@@ -15,7 +15,10 @@
 pragma solidity ^0.8.9;
 
 interface IWormhole {
-    function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel) external payable returns (uint64 sequence);
+    function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel)
+        external
+        payable
+        returns (uint64 sequence);
     function messageFee() external view returns (uint256);
 }
 
@@ -28,10 +31,7 @@ contract UniswapWormholeMessageSender {
     // intermediate state when transfering contract ownership
     address public pendingOwner;
 
-    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
-    // In the future it could be used to communicate a payload version,
-    // but as long as this contract is not upgradable and only sends one message type, it's not needed.
     uint32 public constant NONCE = 0;
 
     /**
@@ -45,8 +45,14 @@ contract UniswapWormholeMessageSender {
      */
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
-    event  MessageSent(bytes payload, address indexed messageReceiver);
+    /**
+     * @notice This event is emitted when a Wormhole message is published.
+     * @param payload Encoded payload emitted by the Wormhole core contract.
+     * @param messageReceiver Recipient contract of the emitted Wormhole message.
+     */
+    event MessageSent(bytes payload, address indexed messageReceiver);
 
+    // Wormhole core contract interface
     IWormhole private immutable wormhole;
 
     /**
@@ -67,7 +73,13 @@ contract UniswapWormholeMessageSender {
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+    function sendMessage(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory datas,
+        address messageReceiver,
+        uint16 receiverChainId
+    ) external payable onlyOwner {
         // cache wormhole instance and verify that the caller sent enough value to cover the Wormhole message fee
         IWormhole _wormhole = wormhole;
         uint256 messageFee = _wormhole.messageFee();
