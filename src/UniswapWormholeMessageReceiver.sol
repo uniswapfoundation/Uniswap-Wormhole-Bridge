@@ -80,7 +80,7 @@ contract UniswapWormholeMessageReceiver {
     /**
      * @param whMessage Wormhole message relayed from a source chain.
      */
-    function receiveMessage(bytes calldata whMessage) public {
+    function receiveMessage(bytes calldata whMessage) public payable {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate

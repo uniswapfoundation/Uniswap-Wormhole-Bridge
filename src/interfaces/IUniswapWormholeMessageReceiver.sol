@@ -36,5 +36,5 @@ interface IUniswapWormholeMessageReceiver {
         bytes32 hash;
     }
 
-    function receiveMessage(bytes memory whMessage) external;
+    function receiveMessage(bytes memory whMessage) external payable;
 }
