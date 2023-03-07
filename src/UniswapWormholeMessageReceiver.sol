@@ -70,8 +70,8 @@ contract UniswapWormholeMessageReceiver {
      */
     constructor(address wormholeAddress, bytes32 _messageSender) {
         // sanity check constructor args
-        require(wormholeAddress != address(0), "invalid wormhole address");
-        require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "invalid sender contract");
+        require(wormholeAddress != address(0), "Invalid wormhole address");
+        require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "Invalid sender contract");
 
         wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
@@ -124,6 +124,9 @@ contract UniswapWormholeMessageReceiver {
         uint256 targetsLength = targets.length;
         require(targetsLength == datas.length && targetsLength == values.length, "Inconsistent argument lengths");
 
+        // verify that the caller sent enough value to make each target call
+        require(verifyTargetValues(values), "Incorrect value");
+
         // execute each message
         for (uint256 i = 0; i < targetsLength;) {
             (bool success,) = targets[i].call{value: values[i]}(datas[i]);
@@ -133,5 +136,20 @@ contract UniswapWormholeMessageReceiver {
                 i += 1;
             }
         }
+    }
+
+    function verifyTargetValues(uint256[] memory values) internal view returns (bool) {
+        uint256 valuesSum;
+
+        uint256 valuesLength = values.length;
+        for (uint256 i = 0; i < valuesLength;) {
+            valuesSum += values[i];
+
+            unchecked {
+                i += 1;
+            }
+        }
+
+        return valuesSum == msg.value;
     }
 }
