@@ -15,7 +15,10 @@
 pragma solidity ^0.8.9;
 
 interface IWormhole {
-    function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel) external payable returns (uint64 sequence);
+    function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel)
+        external
+        payable
+        returns (uint64 sequence);
     function messageFee() external view returns (uint256);
 }
 
@@ -45,7 +48,7 @@ contract UniswapWormholeMessageSender {
      */
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
-    event  MessageSent(bytes payload, address indexed messageReceiver);
+    event MessageSent(bytes payload, address indexed messageReceiver);
 
     IWormhole private immutable wormhole;
 
@@ -67,7 +70,13 @@ contract UniswapWormholeMessageSender {
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
-    function sendMessage(address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) external onlyOwner payable {
+    function sendMessage(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory datas,
+        address messageReceiver,
+        uint16 receiverChainId
+    ) external payable onlyOwner {
         // cache wormhole instance and verify that the caller sent enough value to cover the Wormhole message fee
         IWormhole _wormhole = wormhole;
         uint256 messageFee = _wormhole.messageFee();

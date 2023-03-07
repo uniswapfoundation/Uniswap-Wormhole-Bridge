@@ -13,25 +13,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 pragma solidity ^0.8.9;
+
 import "./Structs.sol";
 
 interface IWormhole {
-    function parseAndVerifyVM(bytes calldata encodedVM) external view returns (Structs.VM memory vm, bool valid, string memory reason);
+    function parseAndVerifyVM(bytes calldata encodedVM)
+        external
+        view
+        returns (Structs.VM memory vm, bool valid, string memory reason);
 }
 
 /**
-@title  Uniswap Wormhole Message Receiver
-@dev    this contract receives and executes Uniswap governance proposals that were sent from the UniswapWormholeMessageSender
-        contract on Ethereum via Wormhole.
-        It enforces that proposals are executed in order, but it does not guarantee that all proposals are executed.
-        i.e. The message sequence number of proposals must be strictly monotonically increasing, but need not be consecutive
-        The maximum number of proposals that can be received is therefore UINT64_MAX.
-        For example, if there are proposals 1,2 and 3, then the following are valid executions (not exhaustive):
-            1,2,3
-            1,3
-        But the following are impossible (not exhaustive):
-            1,3,2
-*/
+ * @title  Uniswap Wormhole Message Receiver
+ * @dev    this contract receives and executes Uniswap governance proposals that were sent from the UniswapWormholeMessageSender
+ *         contract on Ethereum via Wormhole.
+ *         It enforces that proposals are executed in order, but it does not guarantee that all proposals are executed.
+ *         i.e. The message sequence number of proposals must be strictly monotonically increasing, but need not be consecutive
+ *         The maximum number of proposals that can be received is therefore UINT64_MAX.
+ *         For example, if there are proposals 1,2 and 3, then the following are valid executions (not exhaustive):
+ *             1,2,3
+ *             1,3
+ *         But the following are impossible (not exhaustive):
+ *             1,3,2
+ */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
 
@@ -93,7 +97,7 @@ contract UniswapWormholeMessageReceiver {
          * remains a constant this is a non-issue.  If this changes, changes to the receiver may be required to address messages
          * of variable consistency.
          */
-        require(lastExecutedSequence < vm.sequence , "Invalid Sequence number");
+        require(lastExecutedSequence < vm.sequence, "Invalid Sequence number");
         // Increase lastExecutedSequence
         lastExecutedSequence = vm.sequence;
 
@@ -101,22 +105,28 @@ contract UniswapWormholeMessageReceiver {
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
-        (address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId) = abi.decode(vm.payload, (address[], uint256[], bytes[], address, uint16));
-        require (messageReceiver == address(this), "Message not for this dest");
-        require (receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory datas,
+            address messageReceiver,
+            uint16 receiverChainId
+        ) = abi.decode(vm.payload, (address[], uint256[], bytes[], address, uint16));
+        require(messageReceiver == address(this), "Message not for this dest");
+        require(receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // cache target length and verify that each argument has the same length
         uint256 targetsLength = targets.length;
-        require(targetsLength == datas.length && targetsLength == values.length, 'Inconsistent argument lengths');
+        require(targetsLength == datas.length && targetsLength == values.length, "Inconsistent argument lengths");
 
         // execute each message
         for (uint256 i = 0; i < targetsLength;) {
-            (bool success, ) = targets[i].call{value: values[i]}(datas[i]);
-            require(success, 'Sub-call failed');
+            (bool success,) = targets[i].call{value: values[i]}(datas[i]);
+            require(success, "Sub-call failed");
 
-            unchecked { i += 1; }
+            unchecked {
+                i += 1;
+            }
         }
     }
 }
-
-
