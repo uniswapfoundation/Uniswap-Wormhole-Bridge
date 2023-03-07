@@ -31,10 +31,7 @@ contract UniswapWormholeMessageSender {
     // intermediate state when transfering contract ownership
     address public pendingOwner;
 
-    // consistencyLevel = 1 means finalized on Ethereum, see https://book.wormhole.com/wormhole/3_coreLayerContracts.html#consistency-levels
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
-    // In the future it could be used to communicate a payload version,
-    // but as long as this contract is not upgradable and only sends one message type, it's not needed.
     uint32 public constant NONCE = 0;
 
     /**
@@ -48,8 +45,14 @@ contract UniswapWormholeMessageSender {
      */
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
+    /**
+     * @notice This event is emitted when a Wormhole message is published.
+     * @param payload Encoded payload emitted by the Wormhole core contract.
+     * @param messageReceiver Recipient contract of the emitted Wormhole message.
+     */
     event MessageSent(bytes payload, address indexed messageReceiver);
 
+    // Wormhole core contract interface
     IWormhole private immutable wormhole;
 
     /**
