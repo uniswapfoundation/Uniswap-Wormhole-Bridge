@@ -24,7 +24,7 @@ interface IWormhole {
 
 bytes32 constant messagePayloadVersion = keccak256(
     abi.encode(
-        "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"
+        "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, string[] memory _signatures, address messageReceiver, uint16 receiverChainId)"
     )
 );
 
@@ -32,11 +32,12 @@ function generateMessagePayload(
     address[] memory _targets,
     uint256[] memory _values,
     bytes[] memory _calldatas,
+    string[] memory _signatures,
     address _messageReceiver,
     uint16 _receiverChainId
 ) pure returns (bytes memory) {
-    // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
-    return abi.encode(messagePayloadVersion, _targets, _values, _calldatas, _messageReceiver, _receiverChainId);
+    // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated both here and in the receiver.
+    return abi.encode(messagePayloadVersion, _targets, _values, _calldatas, _signatures, _messageReceiver, _receiverChainId);
 }
 
 contract UniswapWormholeMessageSender {
@@ -94,6 +95,7 @@ contract UniswapWormholeMessageSender {
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
+        string[] memory signatures,
         address messageReceiver,
         uint16 receiverChainId
     ) external payable onlyOwner {
@@ -104,7 +106,7 @@ contract UniswapWormholeMessageSender {
         require(msg.value == messageFee, "invalid message fee");
 
         // format the message payload
-        bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
+        bytes memory payload = generateMessagePayload(targets, values, calldatas, signatures, messageReceiver, receiverChainId);
 
         // send the payload by invoking the Wormhole core contract
         _wormhole.publishMessage{value: messageFee}(NONCE, payload, CONSISTENCY_LEVEL);

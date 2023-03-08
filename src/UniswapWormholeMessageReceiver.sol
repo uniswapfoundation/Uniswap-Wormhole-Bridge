@@ -38,10 +38,12 @@ interface IWormhole {
  * - 1,3,2
  */
 contract UniswapWormholeMessageReceiver {
+    event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data);
+
     string public constant NAME = "Uniswap Wormhole Message Receiver";
     bytes32 constant expectedMessagePayloadVersion = keccak256(
         abi.encode(
-            "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"
+            "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, string[] memory _signatures, address messageReceiver, uint16 receiverChainId)"
         )
     );
 
@@ -120,23 +122,35 @@ contract UniswapWormholeMessageReceiver {
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory calldatas,
+            string[] memory signatures,
             address messageReceiver,
             uint16 receiverChainId
-        ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
+        ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], string[], address, uint16));
         require(expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
         require(messageReceiver == address(this), "Message not for this dest");
         require(receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // cache target length and verify that each argument has the same length
         uint256 targetsLength = targets.length;
-        require(targetsLength == calldatas.length && targetsLength == values.length, "Inconsistent argument lengths");
+        require(
+            targetsLength == calldatas.length &&
+            targetsLength == values.length &&
+            targetsLength == signatures.length
+            , "Inconsistent argument lengths");
 
         // verify that the caller sent enough value to make each target call
         require(verifyTargetValues(values), "Incorrect value");
 
         // execute each message
         for (uint256 i = 0; i < targetsLength;) {
-            (bool success,) = targets[i].call{value: values[i]}(calldatas[i]);
+            bytes memory callData;
+            if (bytes(signatures[i]).length == 0) {
+                callData = calldatas[i];
+            } else {
+                callData = abi.encodePacked(bytes4(keccak256(bytes(signatures[i]))), calldatas[i]);
+            }
+
+            (bool success,) = targets[i].call{value: values[i]}(callData);
             require(success, "Sub-call failed");
 
             unchecked {

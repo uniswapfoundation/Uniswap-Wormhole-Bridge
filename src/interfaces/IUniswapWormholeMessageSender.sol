@@ -8,6 +8,7 @@ interface IUniswapWormholeMessageSender {
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory datas,
+        string[] memory signatures,
         address messageReceiver,
         uint16 receiverChainId
     ) external payable;
