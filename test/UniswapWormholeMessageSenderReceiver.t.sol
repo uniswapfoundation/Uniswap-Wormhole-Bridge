@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {UniswapWormholeMessageReceiver} from "../src/UniswapWormholeMessageReceiver.sol";
 import {IUniswapWormholeMessageReceiver} from "../src/interfaces/IUniswapWormholeMessageReceiver.sol";
-import {UniswapWormholeMessageSender} from "../src/UniswapWormholeMessageSender.sol";
+import {UniswapWormholeMessageSender, generateMessagePayload} from "../src/UniswapWormholeMessageSender.sol";
 import {IUniswapWormholeMessageSender} from "../src/interfaces/IUniswapWormholeMessageSender.sol";
 import {Messages} from "wormhole/contracts/Messages.sol";
 import {IWormhole} from "wormhole/contracts/interfaces/IWormhole.sol";
@@ -116,7 +116,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         require(expectedRevertHash == actualRevertHash, "call did not revert as expected");
     }
 
-    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns (bytes memory vaa) {
+    function simulateSignedVaa(bytes memory body, bytes32 _hash) internal pure returns (bytes memory vaa) {
         bytes memory signatures = new bytes(0);
 
         for (uint256 i = 0; i < quorumGuardians; ++i) {
@@ -187,17 +187,6 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
     }
 
-    function generateMessagePayload(
-        address[] memory targetValues,
-        uint256[] memory msgValues,
-        bytes[] memory dataValues,
-        uint16 receiverChainId,
-        address receiverAddress
-    ) public returns (bytes memory payload) {
-        payload =
-            abi.encode(targetValues, msgValues, dataValues, bytes32(uint256(uint160(receiverAddress))), receiverChainId);
-    }
-
     function testUpdateWormholeMessageFee(uint256 newFee) public {
         uint256 currentFee = wormhole.messageFee();
 
@@ -240,7 +229,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uint64 sequence = 1;
         uint16 emitterChainId = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -273,7 +262,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         // other test variables
         uint64 sequence = 1;
         uint16 emitterChainId = 2;
-        bytes memory payload = generateMessagePayload(_targets, _values, _datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(_targets, _values, _datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -293,7 +282,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         bytes[] memory badDatas = new bytes[](1);
         badDatas[0] = abi.encodeWithSignature("receiveGovernanceMessageOne(bytes32,uint8)", governanceActionOne, 420); // bad action
 
-        bytes memory payload = generateMessagePayload(targets, values, badDatas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, badDatas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -313,7 +302,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uint64 sequence = 1;
         uint16 emitterChainId = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -346,7 +335,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         // other test variables
         uint64 sequence = 1;
         uint16 emitterChainId = 2;
-        bytes memory payload = generateMessagePayload(_targets, _values, _datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(_targets, _values, _datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -357,7 +346,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInvalidEmitterAddress() public {
         uint64 sequence = 1;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, bytes32(uint256(8)), sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -368,7 +357,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInvalidEmitterChainId() public {
         uint64 sequence = 1;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id - 1, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -379,7 +368,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testReplay() public {
         uint64 sequence = 1;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -392,7 +381,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInvalidSequence() public {
         uint64 sequence = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -407,7 +396,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testMessageTimeout() public {
         uint64 sequence = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 2881 minutes);
@@ -419,7 +408,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uint64 sequence = 2;
 
         bytes memory payload =
-            generateMessagePayload(incorrectLengthTargets, values, datas, bsc_chain_id, address(uniReceiver));
+            generateMessagePayload(incorrectLengthTargets, values, datas, address(uniReceiver), bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -430,7 +419,8 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInvalidReceiverAddress() public {
         uint64 sequence = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uint160(2023)));
+        address invalidReceiver = address(uint160(2023));
+        bytes memory payload = generateMessagePayload(targets, values, datas, invalidReceiver, bsc_chain_id);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
@@ -441,11 +431,52 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     function testInvalidReceiverChain() public {
         uint64 sequence = 2;
 
-        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id - 1, address(uniReceiver));
+        bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id - 1);
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
         vm.expectRevert("Message not for this chain");
+        uniReceiver.receiveMessage(whMessage);
+    }
+
+    function testFailingSubcall() public {
+        uint64 sequence = 2;
+
+        address[] memory failingTargets = new address[](1);
+        failingTargets[0] = 0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84;
+
+        bytes memory payload = generateMessagePayload(failingTargets, values, datas, address(uniReceiver), bsc_chain_id - 1);
+        bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        vm.expectRevert("Sub-call failed");
+        uniReceiver.receiveMessage(whMessage);
+    }
+
+    // this is a modification of generateMessagePayload() because we need to control _messagePayloadVersion for the following tests.
+    function generateMessagePayloadWithVersion(bytes32 _messagePayloadVersion, address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas, address _messageReceiver, uint16 _receiverChainId) private pure returns(bytes memory) {
+        return abi.encode(_messagePayloadVersion,_targets,_values,_calldatas,_messageReceiver,_receiverChainId);
+    }
+
+    function testInvalidMessageType() public {
+        bytes32 correctMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+        bytes32 invalidMessagePayloadVersion = keccak256(abi.encode("invalid"));
+
+        // we are using the locally specified generateMessagePayloadWithVersion() here, so first make sure that it works by testing the happy case.
+        uint64 sequence = 2;
+        bytes memory payload = generateMessagePayloadWithVersion(correctMessagePayloadVersion, targets, values, datas, address(uniReceiver), bsc_chain_id);
+        bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        uniReceiver.receiveMessage{value: mock.governanceValueOne()}(whMessage);
+
+        // now make sure that it fails with a wrong message type
+        sequence = 3;
+        payload = generateMessagePayloadWithVersion(invalidMessagePayloadVersion, targets, values, datas, address(uniReceiver), bsc_chain_id);
+        whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        vm.expectRevert("Wrong payload version");
         uniReceiver.receiveMessage(whMessage);
     }
 

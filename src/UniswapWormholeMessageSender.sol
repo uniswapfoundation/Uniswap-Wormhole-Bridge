@@ -22,6 +22,12 @@ interface IWormhole {
     function messageFee() external view returns (uint256);
 }
 
+bytes32 constant messagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+
+function generateMessagePayload(address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas, address _messageReceiver, uint16 _receiverChainId) pure returns(bytes memory) {
+    return abi.encode(messagePayloadVersion,_targets,_values,_calldatas,_messageReceiver,_receiverChainId); // SECURITY: Anytime this format is changed, messagePayloadVersion should be updated.
+}
+
 contract UniswapWormholeMessageSender {
     string public constant NAME = "Uniswap Wormhole Message Sender";
 
@@ -69,14 +75,14 @@ contract UniswapWormholeMessageSender {
     /**
      * @param targets array of target addresses
      * @param values array of values
-     * @param datas array of datas
+     * @param calldatas array of calldatas
      * @param messageReceiver address of the receiver contract
      * @param receiverChainId chain id of the receiver chain
      */
     function sendMessage(
         address[] memory targets,
         uint256[] memory values,
-        bytes[] memory datas,
+        bytes[] memory calldatas,
         address messageReceiver,
         uint16 receiverChainId
     ) external payable onlyOwner {
@@ -87,7 +93,7 @@ contract UniswapWormholeMessageSender {
         require(msg.value == messageFee, "invalid message fee");
 
         // format the message payload
-        bytes memory payload = abi.encode(targets, values, datas, messageReceiver, receiverChainId);
+        bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
 
         // send the payload by invoking the Wormhole core contract
         _wormhole.publishMessage{value: messageFee}(NONCE, payload, CONSISTENCY_LEVEL);

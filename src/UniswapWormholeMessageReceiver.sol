@@ -39,6 +39,7 @@ interface IWormhole {
  */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
+    bytes32 constant expectedMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
 
     // Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format,
     // i.e. 12 zero bytes followed by a 20-byte Ethereum address.
@@ -111,25 +112,27 @@ contract UniswapWormholeMessageReceiver {
 
         // verify destination
         (
+            bytes32 receivedMessagePayloadVersion,
             address[] memory targets,
             uint256[] memory values,
-            bytes[] memory datas,
+            bytes[] memory calldatas,
             address messageReceiver,
             uint16 receiverChainId
-        ) = abi.decode(vm.payload, (address[], uint256[], bytes[], address, uint16));
+        ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
+        require(expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
         require(messageReceiver == address(this), "Message not for this dest");
         require(receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
 
         // cache target length and verify that each argument has the same length
         uint256 targetsLength = targets.length;
-        require(targetsLength == datas.length && targetsLength == values.length, "Inconsistent argument lengths");
+        require(targetsLength == calldatas.length && targetsLength == values.length, "Inconsistent argument lengths");
 
         // verify that the caller sent enough value to make each target call
         require(verifyTargetValues(values), "Incorrect value");
 
         // execute each message
         for (uint256 i = 0; i < targetsLength;) {
-            (bool success,) = targets[i].call{value: values[i]}(datas[i]);
+            (bool success,) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, "Sub-call failed");
 
             unchecked {
