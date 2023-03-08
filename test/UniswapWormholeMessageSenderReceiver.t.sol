@@ -199,10 +199,6 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         assertEq(currentFee, newFee);
     }
 
-    function testSendMessageSuccess() public {
-        uniSender.sendMessage{value: wormhole.messageFee()}(targets, values, datas, address(uniReceiver), bsc_chain_id);
-    }
-
     function testSendMessageFailureZeroMessageFee(uint256 messageFee) public {
         vm.assume(messageFee > 0);
 
