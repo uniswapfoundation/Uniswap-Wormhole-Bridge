@@ -60,7 +60,7 @@ contract UniswapWormholeMessageSender {
      */
     constructor(address wormholeAddress) {
         // sanity check constructor args
-        require(wormholeAddress != address(0), "invalid wormhole address");
+        require(wormholeAddress != address(0), "Invalid wormhole address");
 
         wormhole = IWormhole(wormholeAddress);
         owner = msg.sender;

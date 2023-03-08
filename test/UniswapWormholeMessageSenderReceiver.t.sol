@@ -11,12 +11,25 @@ import {IWormhole} from "wormhole/contracts/interfaces/IWormhole.sol";
 import "wormhole/contracts/Implementation.sol";
 import "wormhole/contracts/Setup.sol";
 import {Wormhole} from "wormhole/contracts/Wormhole.sol";
+import {MockGovernanceReceiver} from "./MockGovernanceReceiver.sol";
+
+interface IMockGovernanceReceiver {
+    function governanceValueOne() external returns (uint256);
+    function governanceValueTwo() external returns (uint256);
+    function consumedActions(bytes32 action) external returns (bool);
+}
 
 contract UniswapWormholeMessageSenderReceiverTest is Test {
     IWormhole public wormhole;
     IUniswapWormholeMessageReceiver public uniReceiver;
     IUniswapWormholeMessageSender public uniSender;
+    IMockGovernanceReceiver public mock;
 
+    // Mock governance actions
+    bytes32 constant governanceActionOne = 0x0000000000000000000000000000000000000000000000000000000000000069;
+    bytes32 constant governanceActionTwo = 0x000000000000000000000000000000000000000000000000000000000000beef;
+
+    // Test setup variables
     bytes32 constant msgSender = 0x0000000000000000000000000000000000000000000000000000000000000012;
     uint256 constant numGuardians = 19;
     uint256 constant quorumGuardians = 13;
@@ -37,13 +50,21 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         address uniReceiverAddress = address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender));
         uniReceiver = IUniswapWormholeMessageReceiver(uniReceiverAddress);
 
+        // deploy the mock governance contract
+        address mockReceiver = address(new MockGovernanceReceiver(uniReceiverAddress));
+        mock = IMockGovernanceReceiver(mockReceiver);
+
         // set up uniswap wormhole message sender contract
         address uniSenderAddress = address(new UniswapWormholeMessageSender(address(wormhole)));
         uniSender = IUniswapWormholeMessageSender(uniSenderAddress);
 
-        targets.push(vm.addr(8)); // filling with a likely EOA for now
-        values.push(0);
-        datas.push(abi.encodePacked("random")); // setting to a random byte as target is set to an EOA for now
+        // create calldata for the first mock governance action
+        bytes memory encodedGovernanceActionOne =
+            abi.encodeWithSignature("receiveGovernanceMessageOne(bytes32,uint8)", governanceActionOne, 1);
+
+        targets.push(mockReceiver);
+        values.push(mock.governanceValueOne());
+        datas.push(encodedGovernanceActionOne);
     }
 
     function setupWormhole() public returns (address) {
@@ -69,6 +90,30 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
             block.chainid // evm chain Id
         );
         return address(wormholeAddress);
+    }
+
+    function expectRevertWithValue(
+        address contractAddress,
+        bytes memory encodedSignature,
+        string memory expectedRevert,
+        uint256 value_
+    ) internal {
+        (bool success, bytes memory result) = contractAddress.call{value: value_}(encodedSignature);
+        require(!success, "call did not revert");
+
+        // fetch the revert string bytes
+        bytes memory newResult;
+        for (uint256 i = 0; i < result.length; ++i) {
+            // skip signature
+            if (i > 3) {
+                newResult = abi.encodePacked(newResult, result[i]);
+            }
+        }
+
+        // compare revert strings
+        bytes32 expectedRevertHash = keccak256(abi.encode(expectedRevert));
+        bytes32 actualRevertHash = keccak256(newResult);
+        require(expectedRevertHash == actualRevertHash, "call did not revert as expected");
     }
 
     function simulateSignedVaa(bytes memory body, bytes32 _hash) internal returns (bytes memory vaa) {
@@ -191,7 +236,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uniSender.sendMessage{value: invalidFee}(targets, values, datas, address(uniReceiver), bsc_chain_id);
     }
 
-    function testReceiveMessageSuccess() public {
+    function testReceiveMessageSuccessWithOneAction() public {
         uint64 sequence = 1;
         uint16 emitterChainId = 2;
 
@@ -199,7 +244,114 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
-        uniReceiver.receiveMessage(whMessage);
+        uniReceiver.receiveMessage{value: mock.governanceValueOne()}(whMessage);
+
+        // confirm that the mock contract received the governance action
+        assertEq(mock.consumedActions(governanceActionOne), true);
+    }
+
+    function testReceiveMessageSuccessWithTwoActions() public {
+        // create second governance action signature
+        bytes memory encodedGovernanceActionTwo =
+            abi.encodeWithSignature("receiveGovernanceMessageTwo(bytes32,uint8)", governanceActionTwo, 2);
+
+        // create local instance of targets/values/datas arrays
+        address[] memory _targets = new address[](2);
+        uint256[] memory _values = new uint256[](2);
+        bytes[] memory _datas = new bytes[](2);
+
+        // update the local arrays with the first governance action
+        _targets[0] = targets[0];
+        _values[0] = values[0];
+        _datas[0] = datas[0];
+
+        // update the local arrays with the second governance action
+        _targets[1] = address(mock);
+        _values[1] = mock.governanceValueTwo();
+        _datas[1] = encodedGovernanceActionTwo;
+
+        // other test variables
+        uint64 sequence = 1;
+        uint16 emitterChainId = 2;
+        bytes memory payload = generateMessagePayload(_targets, _values, _datas, bsc_chain_id, address(uniReceiver));
+        bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        uint256 multiActionValue = mock.governanceValueOne() + mock.governanceValueTwo();
+        uniReceiver.receiveMessage{value: multiActionValue}(whMessage);
+
+        // confirm that the mock contract received the governance action
+        assertEq(mock.consumedActions(governanceActionOne), true);
+        assertEq(mock.consumedActions(governanceActionTwo), true);
+    }
+
+    function testInvalidSubCall() public {
+        uint64 sequence = 1;
+        uint16 emitterChainId = 2;
+
+        // create bad datas array
+        bytes[] memory badDatas = new bytes[](1);
+        badDatas[0] = abi.encodeWithSignature("receiveGovernanceMessageOne(bytes32,uint8)", governanceActionOne, 420); // bad action
+
+        bytes memory payload = generateMessagePayload(targets, values, badDatas, bsc_chain_id, address(uniReceiver));
+        bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+
+        // note Sometimes forge cannot correctly match the revert string from a call. The
+        // expectRevertWithValue performs the same function as vm.expectRevert.
+        bytes memory encodedSignature = abi.encodeWithSignature("receiveMessage(bytes)", whMessage);
+        expectRevertWithValue(address(uniReceiver), encodedSignature, "Sub-call failed", mock.governanceValueOne());
+
+        // confirm that the mock contract did not receive the governance action
+        assertEq(mock.consumedActions(governanceActionOne), false);
+    }
+
+    function testIncorrectValueWithOneAction(uint256 _value) public {
+        vm.assume(_value != mock.governanceValueOne() && _value < type(uint96).max);
+
+        uint64 sequence = 1;
+        uint16 emitterChainId = 2;
+
+        bytes memory payload = generateMessagePayload(targets, values, datas, bsc_chain_id, address(uniReceiver));
+        bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        vm.expectRevert("Incorrect value");
+        uniReceiver.receiveMessage{value: _value}(whMessage);
+    }
+
+    function testIncorrectValueWithTwoActions(uint256 _value) public {
+        vm.assume(_value != mock.governanceValueOne() + mock.governanceValueTwo() && _value < type(uint96).max);
+
+        // create second governance action signature
+        bytes memory encodedGovernanceActionTwo =
+            abi.encodeWithSignature("receiveGovernanceMessageTwo(bytes32,uint8)", governanceActionTwo, 2);
+
+        // create local instance of targets/values/datas arrays
+        address[] memory _targets = new address[](2);
+        uint256[] memory _values = new uint256[](2);
+        bytes[] memory _datas = new bytes[](2);
+
+        // update the local arrays with the first governance action
+        _targets[0] = targets[0];
+        _values[0] = values[0];
+        _datas[0] = datas[0];
+
+        // update the local arrays with the second governance action
+        _targets[1] = address(mock);
+        _values[1] = mock.governanceValueTwo();
+        _datas[1] = encodedGovernanceActionTwo;
+
+        // other test variables
+        uint64 sequence = 1;
+        uint16 emitterChainId = 2;
+        bytes memory payload = generateMessagePayload(_targets, _values, _datas, bsc_chain_id, address(uniReceiver));
+        bytes memory whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
+
+        vm.warp(timestamp + 45 minutes);
+        vm.expectRevert("Incorrect value");
+        uniReceiver.receiveMessage{value: _value}(whMessage);
     }
 
     function testInvalidEmitterAddress() public {
@@ -231,7 +383,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
-        uniReceiver.receiveMessage(whMessage);
+        uniReceiver.receiveMessage{value: mock.governanceValueOne()}(whMessage);
 
         vm.expectRevert("Invalid Sequence number");
         uniReceiver.receiveMessage(whMessage);
@@ -244,7 +396,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
 
         vm.warp(timestamp + 45 minutes);
-        uniReceiver.receiveMessage(whMessage);
+        uniReceiver.receiveMessage{value: mock.governanceValueOne()}(whMessage);
 
         whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence - 1, payload);
 
@@ -294,21 +446,6 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         vm.warp(timestamp + 45 minutes);
         vm.expectRevert("Message not for this chain");
-        uniReceiver.receiveMessage(whMessage);
-    }
-
-    function testFailingSubcall() public {
-        uint64 sequence = 2;
-
-        address[] memory failingTargets = new address[](1);
-        failingTargets[0] = 0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84;
-
-        bytes memory payload =
-            generateMessagePayload(failingTargets, values, datas, bsc_chain_id - 1, address(uniReceiver));
-        bytes memory whMessage = generateSignedVaa(ethereum_chain_id, msgSender, sequence, payload);
-
-        vm.warp(timestamp + 45 minutes);
-        vm.expectRevert("Sub-call failed");
         uniReceiver.receiveMessage(whMessage);
     }
 
