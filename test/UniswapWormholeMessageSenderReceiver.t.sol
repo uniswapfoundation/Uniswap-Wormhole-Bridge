@@ -222,7 +222,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     }
 
     function testReceiveMessageSuccessWithOneAction() public {
-        uint64 sequence = 1;
+        uint64 sequence = 0;
         uint16 emitterChainId = 2;
 
         bytes memory payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
@@ -233,6 +233,21 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         // confirm that the mock contract received the governance action
         assertEq(mock.consumedActions(governanceActionOne), true);
+
+        // test that it still works with gaps in the sequence numbers
+        sequence = 100;
+
+        // create second governance action signature
+        bytes memory encodedGovernanceActionTwo =
+            abi.encodeWithSignature("receiveGovernanceMessageTwo(bytes32,uint8)", governanceActionTwo, 2);
+
+        targets[0] = address(mock);
+        values[0] = mock.governanceValueTwo();
+        datas[0] = encodedGovernanceActionTwo;
+        payload = generateMessagePayload(targets, values, datas, address(uniReceiver), bsc_chain_id);
+        whMessage = generateSignedVaa(emitterChainId, msgSender, sequence, payload);
+        vm.warp(timestamp + 45 minutes);
+        uniReceiver.receiveMessage{value: mock.governanceValueTwo()}(whMessage);
     }
 
     function testReceiveMessageSuccessWithTwoActions() public {

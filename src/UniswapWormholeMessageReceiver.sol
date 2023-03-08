@@ -53,8 +53,8 @@ contract UniswapWormholeMessageReceiver {
     uint16 public constant ETHEREUM_CHAIN_ID = 2;
     uint16 public constant BSC_CHAIN_ID = 4;
 
-    // keeps track of the sequence number of the last executed wormhole message
-    uint64 lastExecutedSequence;
+    // the next message must have at least this sequence number
+    uint64 nextMinimumSequence = 0;
 
     /**
      * Message timeout in seconds: Time out needs to account for:
@@ -107,9 +107,9 @@ contract UniswapWormholeMessageReceiver {
          * remains a constant this is a non-issue. If this changes, changes to the receiver may be required to address messages
          * of variable consistency.
          */
-        require(lastExecutedSequence < vm.sequence, "Invalid Sequence number");
-        // increase lastExecutedSequence
-        lastExecutedSequence = vm.sequence;
+        require(vm.sequence >= nextMinimumSequence, "Invalid Sequence number");
+        // increase nextMinimumSequence
+        nextMinimumSequence = vm.sequence + 1;
 
         // check if the message is still valid as defined by the validity period
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
