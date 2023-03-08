@@ -39,7 +39,11 @@ interface IWormhole {
  */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
-    bytes32 constant expectedMessagePayloadVersion = keccak256(abi.encode("UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"));
+    bytes32 constant expectedMessagePayloadVersion = keccak256(
+        abi.encode(
+            "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"
+        )
+    );
 
     // Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format,
     // i.e. 12 zero bytes followed by a 20-byte Ethereum address.
