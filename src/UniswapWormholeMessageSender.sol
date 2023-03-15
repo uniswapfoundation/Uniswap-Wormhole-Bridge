@@ -45,9 +45,6 @@ contract UniswapWormholeMessageSender {
     // address of the permissioned message sender
     address public owner;
 
-    // intermediate state when transfering contract ownership
-    address public pendingOwner;
-
     // `nonce` in Wormhole is a misnomer and can be safely set to a constant value.
     uint32 public constant NONCE = 0;
 
@@ -113,35 +110,13 @@ contract UniswapWormholeMessageSender {
     }
 
     /**
-     * @notice Starts process of transferring ownership of the contract. It saves
-     * the caller's address in the `pendingOwner` state variable.
-     * @param newOwner Address of the `pendingOwner`.
+     * @notice Transfers ownership to `newOwner`.
+     * @param newOwner Address of the `newOwner`.
      */
-    function submitOwnershipTransferRequest(address newOwner) public onlyOwner {
+    function setOwner(address newOwner) public onlyOwner {
         require(newOwner != address(0), "newOwner cannot equal address(0)");
 
-        pendingOwner = newOwner;
-    }
-
-    /**
-     * @notice Cancels the ownership transfer process.
-     * @dev Sets the `pendingOwner` state variable to the zero address.
-     */
-    function cancelOwnershipTransferRequest() public onlyOwner {
-        pendingOwner = address(0);
-    }
-
-    /**
-     * @notice Transfers ownership of the contract to the `pendingOwner`.
-     * @dev It updates the `owner` state variable with the `pendingOwner` state
-     * variable after validating that the caller is the `pendingOwner`.
-     */
-    function confirmOwnershipTransferRequest() public {
-        require(msg.sender == pendingOwner, "caller must be pendingOwner");
-
-        // update the owner in the contract state and reset the pending owner
-        owner = pendingOwner;
-        pendingOwner = address(0);
+        owner = newOwner;
     }
 
     modifier onlyOwner() {

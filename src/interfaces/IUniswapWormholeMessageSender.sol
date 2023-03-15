@@ -12,8 +12,5 @@ interface IUniswapWormholeMessageSender {
         uint16 receiverChainId
     ) external payable;
     function owner() external returns (address);
-    function pendingOwner() external returns (address);
-    function submitOwnershipTransferRequest(address newOwner) external;
-    function cancelOwnershipTransferRequest() external;
-    function confirmOwnershipTransferRequest() external;
+    function setOwner(address newOwner) external;
 }

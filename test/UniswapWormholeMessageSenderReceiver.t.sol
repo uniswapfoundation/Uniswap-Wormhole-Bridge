@@ -507,108 +507,32 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uniReceiver.receiveMessage(whMessage);
     }
 
-    function testSubmitOwnershipTransferRequest(address newOwner) public {
+    function testSetOwner(address newOwner) public {
         vm.assume(newOwner != address(0));
 
-        // call `submitOwnershipTransferRequest`
-        uniSender.submitOwnershipTransferRequest(newOwner);
+        // call `setOwner`
+        uniSender.setOwner(newOwner);
 
         // confirm state changes
-        assertEq(uniSender.pendingOwner(), newOwner);
+        assertEq(uniSender.owner(), newOwner);
     }
 
-    function testSubmitOwnershipTransferRequestFailureZeroAddress() public {
+    function testSetOwnerFailureZeroAddress() public {
         address newOwner = address(0);
 
-        // expect the `submitOwnershipTransferRequest` call to revert
+        // expect the `setOwner` call to revert
         vm.expectRevert("newOwner cannot equal address(0)");
-        uniSender.submitOwnershipTransferRequest(newOwner);
+        uniSender.setOwner(newOwner);
     }
 
-    function testSubmitOwnershipTransferRequestFailureOwnerOnly() public {
+    function testSetOwnerFailureOwnerOnly() public {
         address newOwner = address(this);
 
         // prank the caller's address
         vm.prank(makeAddr("notTheOwner"));
 
-        // expect the `submitOwnershipTransferRequest` call to revert
+        // expect the `setOwner` call to revert
         vm.expectRevert("sender not owner");
-        uniSender.submitOwnershipTransferRequest(newOwner);
-    }
-
-    function testCancelOwnershipTransferRequest(address newOwner) public {
-        vm.assume(newOwner != address(this) && newOwner != address(0));
-
-        // set the pendingOwner
-        uniSender.submitOwnershipTransferRequest(newOwner);
-        assertEq(uniSender.pendingOwner(), newOwner);
-
-        // cancel the request to change ownership of the contract
-        uniSender.cancelOwnershipTransferRequest();
-
-        // confirm that the pendingOwner was set to the zero address
-        assertEq(uniSender.pendingOwner(), address(0));
-
-        // prank
-        vm.prank(makeAddr("notTheOwner"));
-
-        // expect the confirmOwnershipTransferRequest call to revert
-        vm.expectRevert("caller must be pendingOwner");
-        uniSender.confirmOwnershipTransferRequest();
-    }
-
-    function testCancelOwnershipTransferRequestOwnerOnly() public {
-        address wallet = makeAddr("wallet");
-
-        // set the pendingOwner
-        uniSender.submitOwnershipTransferRequest(wallet);
-
-        // prank
-        vm.prank(wallet);
-
-        // expect the cancelOwnershipTransferRequest call to revert
-        vm.expectRevert("sender not owner");
-        uniSender.cancelOwnershipTransferRequest();
-
-        // confirm pendingOwner is still set to address(this)
-        assertEq(uniSender.pendingOwner(), wallet);
-    }
-
-    function testConfirmOwnershipTransferRequest(address newOwner) public {
-        vm.assume(newOwner != address(0));
-
-        // verify pendingOwner and owner state variables
-        assertEq(uniSender.pendingOwner(), address(0));
-        assertEq(uniSender.owner(), address(this));
-
-        // submit ownership transfer request
-        uniSender.submitOwnershipTransferRequest(newOwner);
-
-        // verify the pendingOwner state variable
-        assertEq(uniSender.pendingOwner(), newOwner);
-
-        // Invoke the confirmOwnershipTransferRequest method from the
-        // new owner's wallet.
-        vm.prank(newOwner);
-        uniSender.confirmOwnershipTransferRequest();
-
-        // Verify the ownership change, and that the pendingOwner
-        // state variable has been set to address(0).
-        assertEq(uniSender.owner(), newOwner);
-        assertEq(uniSender.pendingOwner(), address(0));
-    }
-
-    function testConfirmOwnershipTransferRequestNotPendingOwner(address pendingOwner) public {
-        vm.assume(pendingOwner != address(0) && pendingOwner != address(this));
-
-        // set the pending owner and confirm the pending owner state variable
-        uniSender.submitOwnershipTransferRequest(pendingOwner);
-        assertEq(uniSender.pendingOwner(), pendingOwner);
-
-        // Attempt to confirm the ownership transfer request from a wallet that is
-        // not the pending owner's.
-        vm.prank(address(this));
-        vm.expectRevert("caller must be pendingOwner");
-        uniSender.confirmOwnershipTransferRequest();
+        uniSender.setOwner(newOwner);
     }
 }
