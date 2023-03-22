@@ -81,7 +81,7 @@ contract UniswapWormholeMessageReceiver {
         // sanity check constructor args
         require(wormholeAddress != address(0), "Invalid wormhole address");
         require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "Invalid sender contract");
-        require(_chainId != uint16(2), "Invalid chain id, receiver should not be deployed on Ethereum");
+        require(_chainId != ETHEREUM_CHAIN_ID, "Invalid chain id, receiver should not be deployed on Ethereum");
 
         wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
