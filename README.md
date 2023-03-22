@@ -30,7 +30,7 @@ During the initial deployment, you will need to additionally provide the Wormhol
 
 If you are deploying the receiver to a new chain, you will want to make a copy of the receiver contract and modify the constant name and value to match the chain you plan to deploy on.  You can find specific information on Wormhole chain IDs [here](https://github.com/wormhole-foundation/wormhole/blob/main/sdk/js/src/utils/consts.ts#L1).  Additionally, at construction time, you will need to supply both the Wormhole Core Bridge contract address for the chain you are deploying on and the current contract address for the sender you want to trust.
 
-If you are redeploying the receiver to an existing chain, you will want to deploy the latest copy of the receiver contract for that chain with any changes desired.  Similarly, the contruction addresses for the Wormhole Core Contracts and sender will need to be supplied.  You will additionally need to use the current receiver implementation to send a governance message to the Uniswap V3 deployment on that chain to update it's trusted receiver to point to the new implementation.
+If you are redeploying the receiver to an existing chain, you will want to deploy the latest copy of the receiver contract for that chain with any changes desired.  Similarly, the construction addresses for the Wormhole Core Contracts and sender will need to be supplied.  Additionally, you will need to use the current receiver implementation to send a governance message to the Uniswap V3 deployment on that chain to update it's trusted receiver to point to the new implementation.
 
 ## Unit Tests
 
