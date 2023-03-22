@@ -99,6 +99,8 @@ contract UniswapWormholeMessageSender {
         uint256 messageFee = _wormhole.messageFee();
 
         require(msg.value == messageFee, "invalid message fee");
+        require(receiverChainId != 2, "invalid receiver chain, receiverChainID should not be Ethereum");
+
 
         // format the message payload
         bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);

@@ -49,9 +49,13 @@ contract UniswapWormholeMessageReceiver {
     // i.e. 12 zero bytes followed by a 20-byte Ethereum address.
     bytes32 public immutable messageSender;
 
-    IWormhole private immutable wormhole;
+    // A uint16 definining the destination chain of a VAA this contract will trust
+    uint16 public immutable chainId;
+
+    // A uint16 definining the source chain of a VAA this contract will trust
     uint16 public constant ETHEREUM_CHAIN_ID = 2;
-    uint16 public constant BSC_CHAIN_ID = 4;
+
+    IWormhole private immutable wormhole;
 
     // the next message must have at least this sequence number
     uint64 nextMinimumSequence = 0;
@@ -73,13 +77,15 @@ contract UniswapWormholeMessageReceiver {
      * @param _messageSender Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format,
      * i.e. 12 zero bytes followed by a 20-byte Ethereum address.
      */
-    constructor(address wormholeAddress, bytes32 _messageSender) {
+    constructor(address wormholeAddress, bytes32 _messageSender, uint16 _chainId) {
         // sanity check constructor args
         require(wormholeAddress != address(0), "Invalid wormhole address");
         require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "Invalid sender contract");
+        require(_chainId != uint16(2), "Invalid chain id, receiver should not be deployed on Ethereum");
 
         wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
+        chainId = _chainId;
     }
 
     /**
@@ -125,7 +131,7 @@ contract UniswapWormholeMessageReceiver {
         ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
         require(expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
         require(messageReceiver == address(this), "Message not for this dest");
-        require(receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
+        require(receiverChainId == chainId, "Message not for this chain");
 
         // cache target length and verify that each argument has the same length
         uint256 targetsLength = targets.length;

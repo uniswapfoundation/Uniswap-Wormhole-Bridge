@@ -47,7 +47,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole = IWormhole(setupWormhole());
 
         // set up uniswap wormhole message receiver contract
-        address uniReceiverAddress = address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender));
+        address uniReceiverAddress = address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender, bsc_chain_id));
         uniReceiver = IUniswapWormholeMessageReceiver(uniReceiverAddress);
 
         // deploy the mock governance contract
@@ -187,6 +187,15 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
     }
 
+    function testReceiverConstructionBadDestinationChainID() public {
+        // set up wormhole contracts
+        wormhole = IWormhole(setupWormhole());
+
+        // set up uniswap wormhole message receiver contract, with Ethereum as the destination chain ID
+        vm.expectRevert("Invalid chain id, receiver should not be deployed on Ethereum");
+        address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender, ethereum_chain_id));
+    }
+
     function testUpdateWormholeMessageFee(uint256 newFee) public {
         uint256 currentFee = wormhole.messageFee();
 
@@ -209,6 +218,17 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uniSender.sendMessage{value: 0}(targets, values, datas, address(uniReceiver), bsc_chain_id);
     }
 
+    function testSendMessageFailureBadReceiverChain() public {
+        uint256 currentFee = wormhole.messageFee();
+        uint256 newFee = currentFee + 1;
+
+        // update the wormhole message fee
+        updateWormholeMessageFee(newFee);
+
+        vm.expectRevert("invalid receiver chain, receiverChainID should not be Ethereum");
+        uniSender.sendMessage{value: newFee}(targets, values, datas, address(uniReceiver), ethereum_chain_id);
+    }
+
     function testSendMessageFailureMessageFeeTooLarge() public {
         // update the wormhole message fee
         uint256 messageFee = 1e6;
@@ -219,6 +239,14 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         vm.expectRevert("invalid message fee");
         uniSender.sendMessage{value: invalidFee}(targets, values, datas, address(uniReceiver), bsc_chain_id);
+    }
+
+    function testSendMessageFailureMessageFeeTooLarge2() public {
+        // call `sendMessage` with a fee greater than what is set in the wormhole contract
+        uint256 fee = 100;
+
+        vm.expectRevert("invalid message fee");
+        uniSender.sendMessage{value: fee}(targets, values, datas, address(uniReceiver), bsc_chain_id);
     }
 
     function testReceiveMessageSuccessWithOneAction() public {
