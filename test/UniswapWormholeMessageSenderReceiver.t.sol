@@ -36,6 +36,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
     uint256 timestamp = 1641070800;
     uint16 ethereum_chain_id = 2;
     uint16 bsc_chain_id = 4;
+    uint16 unset_chain_id = 0;
 
     address[] targets;
     uint256[] values;
@@ -187,7 +188,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole.submitSetMessageFee(simulateSignedVaa(body, _hash));
     }
 
-    function testReceiverConstructionBadDestinationChainID() public {
+    function testReceiverConstructionBadDestinationChainIDEthereum() public {
         // set up wormhole contracts
         wormhole = IWormhole(setupWormhole());
 
@@ -218,7 +219,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         uniSender.sendMessage{value: 0}(targets, values, datas, address(uniReceiver), bsc_chain_id);
     }
 
-    function testSendMessageFailureBadReceiverChain() public {
+    function testSendMessageFailureBadReceiverChainEthereum() public {
         uint256 currentFee = wormhole.messageFee();
         uint256 newFee = currentFee + 1;
 
@@ -227,6 +228,17 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         vm.expectRevert("invalid receiver chain, receiverChainID should not be Ethereum");
         uniSender.sendMessage{value: newFee}(targets, values, datas, address(uniReceiver), ethereum_chain_id);
+    }
+
+    function testSendMessageFailureBadReceiverChainUnset() public {
+        uint256 currentFee = wormhole.messageFee();
+        uint256 newFee = currentFee + 1;
+
+        // update the wormhole message fee
+        updateWormholeMessageFee(newFee);
+
+        vm.expectRevert("invalid receiver chain, receiverChainID should not be Unset");
+        uniSender.sendMessage{value: newFee}(targets, values, datas, address(uniReceiver), unset_chain_id);
     }
 
     function testSendMessageFailureMessageFeeTooLarge() public {

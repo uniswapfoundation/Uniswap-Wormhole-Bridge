@@ -100,7 +100,7 @@ contract UniswapWormholeMessageSender {
 
         require(msg.value == messageFee, "invalid message fee");
         require(receiverChainId != 2, "invalid receiver chain, receiverChainID should not be Ethereum");
-
+        require(receiverChainId != 0, "invalid receiver chain, receiverChainID should not be Unset");
 
         // format the message payload
         bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
