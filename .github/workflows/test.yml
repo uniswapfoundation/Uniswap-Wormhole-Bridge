@@ -37,15 +37,16 @@ jobs:
         run: |
           forge test -vvv
         id: test
-
   solhint:
     name: runner / solhint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: solhint
-        uses: contractshark/inject-solhint-ci@latest
-        with:
-          github_token: ${{ secrets.github_token }}
-          reporter: github-pr-review # Change reporter.
-          solhint_input: 'src/**/*.sol'
+      - name: Install solhint
+        run: |
+          npm install -g solhint
+      - name: Run solhint
+        run: |
+          solhint 'src/**/*.sol'
+
+
