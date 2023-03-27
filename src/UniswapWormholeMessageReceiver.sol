@@ -14,6 +14,7 @@
  */
 pragma solidity ^0.8.9;
 
+// solhint-disable-next-line no-global-import
 import "./Structs.sol";
 
 interface IWormhole {
@@ -39,7 +40,7 @@ interface IWormhole {
  */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
-    bytes32 constant expectedMessagePayloadVersion = keccak256(
+    bytes32 public constant EXPECTED_MESSAGE_PAYLOAD_VERSION = keccak256(
         abi.encode(
             "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"
         )
@@ -58,7 +59,7 @@ contract UniswapWormholeMessageReceiver {
     IWormhole private immutable wormhole;
 
     // the next message must have at least this sequence number
-    uint64 nextMinimumSequence = 0;
+    uint64 public nextMinimumSequence = 0;
 
     /**
      * Message timeout in seconds: Time out needs to account for:
@@ -81,7 +82,7 @@ contract UniswapWormholeMessageReceiver {
         // sanity check constructor args
         require(wormholeAddress != address(0), "Invalid wormhole address");
         require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "Invalid sender contract");
-        require(_chainId != ETHEREUM_CHAIN_ID, "Invalid chain id, receiver should not be deployed on Ethereum");
+        require(_chainId != ETHEREUM_CHAIN_ID, "Invalid chainId Ethereum");
 
         wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
@@ -118,6 +119,7 @@ contract UniswapWormholeMessageReceiver {
         nextMinimumSequence = vm.sequence + 1;
 
         // check if the message is still valid as defined by the validity period
+        // solhint-disable-next-line not-rely-on-time
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
