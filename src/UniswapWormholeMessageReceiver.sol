@@ -131,7 +131,7 @@ contract UniswapWormholeMessageReceiver {
             address messageReceiver,
             uint16 receiverChainId
         ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
-        require(expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
+        require(EXPECTED_MESSAGE_PAYLOAD_VERSION == receivedMessagePayloadVersion, "Wrong payload version");
         require(messageReceiver == address(this), "Message not for this dest");
         require(receiverChainId == chainId, "Message not for this chain");
 
