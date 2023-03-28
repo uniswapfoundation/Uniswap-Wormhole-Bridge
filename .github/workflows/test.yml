@@ -14,7 +14,6 @@ jobs:
   check:
     strategy:
       fail-fast: true
-
     name: Foundry project
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +37,7 @@ jobs:
           forge test -vvv
         id: test
   solhint:
-    name: runner / solhint
+    name: solhint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -48,5 +47,10 @@ jobs:
       - name: Run solhint
         run: |
           solhint 'src/**/*.sol'
-
+  slither:
+    name: slither
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: crytic/slither-action@v0.3.0
 

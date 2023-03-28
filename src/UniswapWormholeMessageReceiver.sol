@@ -12,7 +12,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.7;
 
 // solhint-disable-next-line no-global-import
 import "./Structs.sol";
@@ -92,7 +92,7 @@ contract UniswapWormholeMessageReceiver {
     /**
      * @param whMessage Wormhole message relayed from a source chain.
      */
-    function receiveMessage(bytes calldata whMessage) public payable {
+    function receiveMessage(bytes calldata whMessage) external payable {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate
