@@ -4,7 +4,7 @@
     "exclude_medium": false,
     "exclude_high": false,
     "disable_color": false,
-    "filter_paths": "(lib/|mocks/|test/)",
+    "filter_paths": "lib/|mocks/|test/",
     "legacy_ast": false,
     "detectors_to_exclude": "low-level-calls,missing-inheritance,incorrect-versions-of-solidity,unused-return,calls-inside-a-loop,block-timestamp"
 }

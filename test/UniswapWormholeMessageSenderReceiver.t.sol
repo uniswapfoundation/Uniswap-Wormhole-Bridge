@@ -164,7 +164,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         return simulateSignedVaa(body, _hash);
     }
 
-    function updateWormholeMessageFee(uint256 newFee) public {
+    function updateWormholeMessageFee(uint256 newFee) internal {
         bytes32 coreModule = 0x00000000000000000000000000000000000000000000000000000000436f7265;
 
         // `SetMessageFee` governance payload
