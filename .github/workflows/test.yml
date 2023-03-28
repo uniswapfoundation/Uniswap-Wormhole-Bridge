@@ -11,16 +11,15 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  check:
+  tests:
     strategy:
       fail-fast: true
-    name: Foundry project
+    name: forge tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -37,7 +36,7 @@ jobs:
           forge test -vvv
         id: test
   solhint:
-    name: solhint
+    name: solhint linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -48,9 +47,13 @@ jobs:
         run: |
           solhint 'src/**/*.sol'
   slither:
-    name: slither
+    name: slither scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: crytic/slither-action@v0.3.0
-
+      - uses: actions/checkout@v2
+      - name: Install slither
+        run: |
+          pip install slither-analyzer
+      - name: Run slither
+        run: |
+          slither .
