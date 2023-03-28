@@ -51,6 +51,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Install solc-select
+        run: |
+          pip3 install solc-select
+      - name: Install solc 0.8.7
+        run: |
+          solc-select install 0.8.7
+      - name: Use solc 0.8.7
+        run: |
+          solc-select use 0.8.7
       - name: Install slither
         run: |
           pip install slither-analyzer
