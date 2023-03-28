@@ -11,17 +11,15 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  check:
+  tests:
     strategy:
       fail-fast: true
-
-    name: Foundry project
+    name: forge tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -37,3 +35,14 @@ jobs:
         run: |
           forge test -vvv
         id: test
+  solhint:
+    name: solhint linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install solhint
+        run: |
+          npm install -g solhint
+      - name: Run solhint
+        run: |
+          solhint 'src/**/*.sol'

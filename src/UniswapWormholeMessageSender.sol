@@ -12,7 +12,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.7;
 
 interface IWormhole {
     function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel)
@@ -99,6 +99,8 @@ contract UniswapWormholeMessageSender {
         uint256 messageFee = _wormhole.messageFee();
 
         require(msg.value == messageFee, "invalid message fee");
+        require(receiverChainId != 2, "invalid receiverChainID Ethereum");
+        require(receiverChainId != 0, "invalid receiverChainID Unset");
 
         // format the message payload
         bytes memory payload = generateMessagePayload(targets, values, calldatas, messageReceiver, receiverChainId);
@@ -113,7 +115,7 @@ contract UniswapWormholeMessageSender {
      * @notice Transfers ownership to `newOwner`.
      * @param newOwner Address of the `newOwner`.
      */
-    function setOwner(address newOwner) public onlyOwner {
+    function setOwner(address newOwner) external onlyOwner {
         require(newOwner != address(0), "newOwner cannot equal address(0)");
 
         owner = newOwner;

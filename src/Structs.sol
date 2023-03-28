@@ -1,7 +1,7 @@
 // contracts/Structs.sol
 // SPDX-License-Identifier: Apache 2
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.7;
 
 interface Structs {
     struct Provider {

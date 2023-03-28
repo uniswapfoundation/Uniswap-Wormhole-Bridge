@@ -12,8 +12,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.7;
 
+// solhint-disable-next-line no-global-import
 import "./Structs.sol";
 
 interface IWormhole {
@@ -39,7 +40,7 @@ interface IWormhole {
  */
 contract UniswapWormholeMessageReceiver {
     string public constant NAME = "Uniswap Wormhole Message Receiver";
-    bytes32 constant expectedMessagePayloadVersion = keccak256(
+    bytes32 public constant EXPECTED_MESSAGE_PAYLOAD_VERSION = keccak256(
         abi.encode(
             "UniswapWormholeMessageSenderV1 (bytes32 receivedMessagePayloadVersion, address[] memory targets, uint256[] memory values, bytes[] memory datas, address messageReceiver, uint16 receiverChainId)"
         )
@@ -49,12 +50,16 @@ contract UniswapWormholeMessageReceiver {
     // i.e. 12 zero bytes followed by a 20-byte Ethereum address.
     bytes32 public immutable messageSender;
 
-    IWormhole private immutable wormhole;
+    // A uint16 definining the destination chain of a VAA this contract will trust
+    uint16 public immutable chainId;
+
+    // A uint16 definining the source chain of a VAA this contract will trust
     uint16 public constant ETHEREUM_CHAIN_ID = 2;
-    uint16 public constant BSC_CHAIN_ID = 4;
+
+    IWormhole private immutable wormhole;
 
     // the next message must have at least this sequence number
-    uint64 nextMinimumSequence = 0;
+    uint64 public nextMinimumSequence = 0;
 
     /**
      * Message timeout in seconds: Time out needs to account for:
@@ -73,19 +78,21 @@ contract UniswapWormholeMessageReceiver {
      * @param _messageSender Address of the UniswapWormholeMessageSender contract on ethereum in Wormhole format,
      * i.e. 12 zero bytes followed by a 20-byte Ethereum address.
      */
-    constructor(address wormholeAddress, bytes32 _messageSender) {
+    constructor(address wormholeAddress, bytes32 _messageSender, uint16 _chainId) {
         // sanity check constructor args
         require(wormholeAddress != address(0), "Invalid wormhole address");
         require(_messageSender != bytes32(0) && bytes12(_messageSender) == 0, "Invalid sender contract");
+        require(_chainId != ETHEREUM_CHAIN_ID, "Invalid chainId Ethereum");
 
         wormhole = IWormhole(wormholeAddress);
         messageSender = _messageSender;
+        chainId = _chainId;
     }
 
     /**
      * @param whMessage Wormhole message relayed from a source chain.
      */
-    function receiveMessage(bytes calldata whMessage) public payable {
+    function receiveMessage(bytes calldata whMessage) external payable {
         (Structs.VM memory vm, bool valid, string memory reason) = wormhole.parseAndVerifyVM(whMessage);
 
         // validate
@@ -112,6 +119,7 @@ contract UniswapWormholeMessageReceiver {
         nextMinimumSequence = vm.sequence + 1;
 
         // check if the message is still valid as defined by the validity period
+        // solhint-disable-next-line not-rely-on-time
         require(vm.timestamp + MESSAGE_TIME_OUT_SECONDS >= block.timestamp, "Message no longer valid");
 
         // verify destination
@@ -123,9 +131,9 @@ contract UniswapWormholeMessageReceiver {
             address messageReceiver,
             uint16 receiverChainId
         ) = abi.decode(vm.payload, (bytes32, address[], uint256[], bytes[], address, uint16));
-        require(expectedMessagePayloadVersion == receivedMessagePayloadVersion, "Wrong payload version");
+        require(EXPECTED_MESSAGE_PAYLOAD_VERSION == receivedMessagePayloadVersion, "Wrong payload version");
         require(messageReceiver == address(this), "Message not for this dest");
-        require(receiverChainId == BSC_CHAIN_ID, "Message not for this chain");
+        require(receiverChainId == chainId, "Message not for this chain");
 
         // cache target length and verify that each argument has the same length
         uint256 targetsLength = targets.length;
