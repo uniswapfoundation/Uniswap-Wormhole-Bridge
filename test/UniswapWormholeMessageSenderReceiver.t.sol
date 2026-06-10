@@ -48,7 +48,8 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole = IWormhole(setupWormhole());
 
         // set up uniswap wormhole message receiver contract
-        address uniReceiverAddress = address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender, bsc_chain_id));
+        address uniReceiverAddress =
+            address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender, bsc_chain_id));
         uniReceiver = IUniswapWormholeMessageReceiver(uniReceiverAddress);
 
         // deploy the mock governance contract
@@ -82,14 +83,15 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
 
         // These values are the default values used in our tilt test environment
         // and are not important.
-        Setup(address(wormholeAddress)).setup(
-            address(wormholeImpl),
-            initSigners,
-            bsc_chain_id, // BSC chain ID
-            1, // Governance source chain ID (1 = solana)
-            0x0000000000000000000000000000000000000000000000000000000000000004, // Governance source address
-            block.chainid // evm chain Id
-        );
+        Setup(address(wormholeAddress))
+            .setup(
+                address(wormholeImpl),
+                initSigners,
+                bsc_chain_id, // BSC chain ID
+                1, // Governance source chain ID (1 = solana)
+                0x0000000000000000000000000000000000000000000000000000000000000004, // Governance source address
+                block.chainid // evm chain Id
+            );
         return address(wormholeAddress);
     }
 
@@ -193,7 +195,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         wormhole = IWormhole(setupWormhole());
 
         // set up uniswap wormhole message receiver contract, with Ethereum as the destination chain ID
-        vm.expectRevert('Invalid chainId Ethereum');
+        vm.expectRevert("Invalid chainId Ethereum");
         address(new UniswapWormholeMessageReceiver(address(wormhole), msgSender, ethereum_chain_id));
     }
 
@@ -226,7 +228,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         // update the wormhole message fee
         updateWormholeMessageFee(newFee);
 
-        vm.expectRevert('invalid receiverChainID Ethereum');
+        vm.expectRevert("invalid receiverChainID Ethereum");
         uniSender.sendMessage{value: newFee}(targets, values, datas, address(uniReceiver), ethereum_chain_id);
     }
 
@@ -237,7 +239,7 @@ contract UniswapWormholeMessageSenderReceiverTest is Test {
         // update the wormhole message fee
         updateWormholeMessageFee(newFee);
 
-        vm.expectRevert('invalid receiverChainID Unset');
+        vm.expectRevert("invalid receiverChainID Unset");
         uniSender.sendMessage{value: newFee}(targets, values, datas, address(uniReceiver), unset_chain_id);
     }
 
