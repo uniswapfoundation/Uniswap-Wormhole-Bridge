@@ -58,10 +58,12 @@ Sender:
 
 Receiver:
 
-| Network    | Address                                                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Celo       | [`0x0Eb863541278308c3A64F8E908BC646e27BFD071`](https://celoscan.io/address/0x0Eb863541278308c3A64F8E908BC646e27BFD071) |
-| BNB Chain* | [`0x341c1511141022cf8eE20824Ae0fFA3491F1302b`](https://bscscan.com/address/0x341c1511141022cf8eE20824Ae0fFA3491F1302b) |
+| Network    | Address                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Celo       | [`0x0Eb863541278308c3A64F8E908BC646e27BFD071`](https://celoscan.io/address/0x0Eb863541278308c3A64F8E908BC646e27BFD071)       |
+| BNB Chain* | [`0x341c1511141022cf8eE20824Ae0fFA3491F1302b`](https://bscscan.com/address/0x341c1511141022cf8eE20824Ae0fFA3491F1302b)       |
+| MegaETH    | [`0xa107580F73BD797Bd8b87Ff24e98346D99F93DdB`](https://mega.etherscan.io/address/0xa107580F73BD797Bd8b87Ff24e98346D99F93DdB) |
+| Avalanche  | [`0x47eB0Cf11a1626462Da3C830bCDe64c3F582B5a6`](https://snowscan.xyz/address/0x47eB0Cf11a1626462Da3C830bCDe64c3F582B5a6)      |
 
 Notices:
 
