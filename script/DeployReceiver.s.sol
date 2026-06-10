@@ -4,46 +4,48 @@ pragma solidity 0.8.12;
 import {Script, console} from "../lib/forge-std/src/Script.sol";
 
 import {UniswapWormholeMessageReceiver} from "../src/UniswapWormholeMessageReceiver.sol";
-import {Constants} from "./Constants.sol";
 
 /// @title Deployer of UniswapWormholeMessageReceiver
-/// @dev Note that the `Constants.smokeCheck()` will revert if the approproate variables have not
-///      been set in the `script/Constants.sol` file.
+/// @dev `WORMHOLE_CORE` is required; it is the wormhole bridge address on the remote chain.
+/// @dev `WORMHOLE_CHAIN_ID` is required; it is the wormhole-defined chain id for the remote chain.
+/// @dev `MESSAGE_SENDER` is optional, as we use one unified sender on Ethereum.
 contract DeployReceiver is Script {
-    function run() external {
-        vm.startBroadcast();
-        // -----------------------------------------------------------------------------------------
-        // Ensure all constants are set for this deployment.
-        //
-        Constants.smokeCheck();
+    uint16 internal constant WORMHOLE_ETHEREUM_CHAIN_ID = 2;
 
-        bytes32 messageSender = bytes32(
-            uint256(uint160(Constants.MESSAGE_SENDER))
+    function run() external {
+        // -----------------------------------------------------------------------------------------
+        // Load environment variables
+        //
+        address messageSender = vm.envOr(
+            "MESSAGE_SENDER",
+            0xf5F4496219F31CDCBa6130B5402873624585615a
         );
+        address wormholeCore = vm.envAddress("WORMHOLE_CORE");
+        uint16 wormholeChainId = uint16(vm.envUint("WORMHOLE_CHAIN_ID"));
+
+        bytes32 wormholeMessageSender = bytes32(uint256(uint160(messageSender)));
 
         // -----------------------------------------------------------------------------------------
         // Deploy the receiver contract.
         //
+        vm.startBroadcast();
         UniswapWormholeMessageReceiver receiver = new UniswapWormholeMessageReceiver({
-                wormholeAddress: Constants.WORMHOLE_CORE,
-                _messageSender: messageSender,
-                _chainId: Constants.WORMHOLE_CHAIN_ID
+                wormholeAddress: wormholeCore,
+                _messageSender: wormholeMessageSender,
+                _chainId: wormholeChainId
             });
+        vm.stopBroadcast();
 
         // -----------------------------------------------------------------------------------------
         // Smoke check the deployment.
         //
         require(
-            receiver.messageSender() == messageSender,
+            receiver.messageSender() == wormholeMessageSender,
             "mismatch: messageSender"
         );
+        require(receiver.chainId() == wormholeChainId, "mismatch: chainId");
         require(
-            receiver.chainId() == Constants.WORMHOLE_CHAIN_ID,
-            "mismatch: chainId"
-        );
-        require(
-            receiver.ETHEREUM_CHAIN_ID() ==
-                Constants.WORMHOLE_ETHEREUM_CHAIN_ID,
+            receiver.ETHEREUM_CHAIN_ID() == WORMHOLE_ETHEREUM_CHAIN_ID,
             "mismatch: ETHEREUM_CHAIN_ID"
         );
         require(
@@ -66,13 +68,12 @@ contract DeployReceiver is Script {
                 "\neip-155 chain id (target chain):  ",
                 vm.toString(block.chainid),
                 "\nwormhole chain id (target chain): ",
-                vm.toString(Constants.WORMHOLE_CHAIN_ID),
+                vm.toString(wormholeChainId),
                 "\nmessage sender (ethereum):        ",
-                vm.toString(Constants.MESSAGE_SENDER),
+                vm.toString(messageSender),
                 "\nwormhole core (target chain):     ",
-                vm.toString(Constants.WORMHOLE_CORE)
+                vm.toString(wormholeCore)
             )
         );
-        vm.stopBroadcast();
     }
 }
