@@ -1,0 +1,17 @@
+{
+  "lib/forge-std": {
+    "branch": {
+      "name": "v1.5.0",
+      "rev": "c2236853aadb8e2d9909bbecdc490099519b70a4"
+    }
+  },
+  "lib/openzeppelin-contracts": {
+    "branch": {
+      "name": "v4.8.2",
+      "rev": "eedca5d873a559140d79cc7ec674d0e28b2b6ebd"
+    }
+  },
+  "lib/wormhole": {
+    "rev": "36c34bec1cb87e87c9e6264d3d70796f2ace11f7"
+  }
+}
