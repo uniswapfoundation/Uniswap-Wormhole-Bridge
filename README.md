@@ -64,6 +64,7 @@ Receiver:
 | BNB Chain* | [`0x341c1511141022cf8eE20824Ae0fFA3491F1302b`](https://bscscan.com/address/0x341c1511141022cf8eE20824Ae0fFA3491F1302b)       |
 | MegaETH    | [`0xa107580F73BD797Bd8b87Ff24e98346D99F93DdB`](https://mega.etherscan.io/address/0xa107580F73BD797Bd8b87Ff24e98346D99F93DdB) |
 | Avalanche  | [`0x47eB0Cf11a1626462Da3C830bCDe64c3F582B5a6`](https://snowscan.xyz/address/0x47eB0Cf11a1626462Da3C830bCDe64c3F582B5a6)      |
+| Elysium    | [`0xA9aE0c5eb238a519b7f5Af27415eb6Dd0744Da8D`](https://elyscan.live/address/0xA9aE0c5eb238a519b7f5Af27415eb6Dd0744Da8D)      |
 
 Notices:
 
